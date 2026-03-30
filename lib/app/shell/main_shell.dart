@@ -5,7 +5,6 @@ import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 
 class MainShell extends StatelessWidget {
   final Widget child;
-
   const MainShell({super.key, required this.child});
 
   @override
@@ -19,9 +18,36 @@ class MainShell extends StatelessWidget {
 
 class _BottomNavBar extends StatelessWidget {
   final List<_NavItem> _items = const [
-    _NavItem(label: 'Home', icon: Icons.home_outlined, activeIcon: Icons.home, route: AppRoutes.home),
-    _NavItem(label: 'Tickets', icon: Icons.confirmation_number_outlined, activeIcon: Icons.confirmation_number, route: AppRoutes.tickets),
-    _NavItem(label: 'Profile', icon: Icons.person_outline, activeIcon: Icons.person, route: AppRoutes.profile),
+    _NavItem(
+      label: 'Trang Chủ',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      route: AppRoutes.home,
+    ),
+    _NavItem(
+      label: 'Lịch Chiếu',
+      icon: Icons.calendar_month_outlined,
+      activeIcon: Icons.calendar_month,
+      route: AppRoutes.schedules,
+    ),
+    _NavItem(
+      label: 'Vé Của Tôi',
+      icon: Icons.confirmation_number_outlined,
+      activeIcon: Icons.confirmation_number,
+      route: AppRoutes.tickets,
+    ),
+    _NavItem(
+      label: 'Ưu Đãi',
+      icon: Icons.local_offer_outlined,
+      activeIcon: Icons.local_offer,
+      route: AppRoutes.offers,
+    ),
+    _NavItem(
+      label: 'Cá Nhân',
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      route: AppRoutes.profile,
+    ),
   ];
 
   @override
@@ -34,7 +60,8 @@ class _BottomNavBar extends StatelessWidget {
       selectedIndex: currentIndex,
       onDestinationSelected: (index) => context.go(_items[index].route),
       backgroundColor: Theme.of(context).colorScheme.surface,
-      indicatorColor: AppColors.primary.withOpacity(0.15),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       destinations: _items
           .map(
             (item) => NavigationDestination(

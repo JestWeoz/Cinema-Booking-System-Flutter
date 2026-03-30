@@ -14,6 +14,8 @@ class AppRoutes {
   static const String movies = '/movies';
   static const String movieDetail = '/movies/:id';
   static const String search = '/search';
+  static const String schedules = '/schedules';
+  static const String offers = '/offers';
 
   // Booking Flow
   static const String cinemas = '/cinemas';

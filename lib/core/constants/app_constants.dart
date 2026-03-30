@@ -9,7 +9,7 @@ class AppConstants {
   // API
   // Change this to your machine IP when running on physical device
   // e.g. 'http://192.168.1.x:8081/api/v1'
-  static const String baseUrl = 'http://10.0.2.2:8081/api/v1'; // Android emulator → localhost
+  static const String baseUrl = 'http://localhost:8081/api/v1'; // Android emulator → localhost
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
 

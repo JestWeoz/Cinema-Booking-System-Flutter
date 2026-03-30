@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
-import 'package:cinema_booking_system_app/features/auth/presentation/pages/login_page.dart';
-import 'package:cinema_booking_system_app/features/auth/presentation/pages/register_page.dart';
-import 'package:cinema_booking_system_app/features/home/presentation/pages/home_page.dart';
-import 'package:cinema_booking_system_app/features/movies/presentation/pages/movie_detail_page.dart';
-import 'package:cinema_booking_system_app/features/booking/presentation/pages/seat_selection_page.dart';
-import 'package:cinema_booking_system_app/features/profile/presentation/pages/profile_page.dart';
-import 'package:cinema_booking_system_app/features/ticket/presentation/pages/tickets_page.dart';
+import 'package:cinema_booking_system_app/pages/login_page.dart';
+import 'package:cinema_booking_system_app/pages/register_page.dart';
+import 'package:cinema_booking_system_app/pages/home_page.dart';
+import 'package:cinema_booking_system_app/pages/movie_detail_page.dart';
+import 'package:cinema_booking_system_app/pages/seat_selection_page.dart';
+import 'package:cinema_booking_system_app/pages/profile_page.dart';
+import 'package:cinema_booking_system_app/pages/tickets_page.dart';
+import 'package:cinema_booking_system_app/pages/schedules_page.dart';
+import 'package:cinema_booking_system_app/pages/offers_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
+
 
 class AppRouter {
   AppRouter._();
@@ -54,6 +57,16 @@ class AppRouter {
             path: AppRoutes.tickets,
             name: 'tickets',
             builder: (_, __) => const TicketsPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.schedules,
+            name: 'schedules',
+            builder: (_, __) => const SchedulesPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.offers,
+            name: 'offers',
+            builder: (_, __) => const OffersPage(),
           ),
           GoRoute(
             path: AppRoutes.profile,
