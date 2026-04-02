@@ -1,3 +1,4 @@
+import 'package:cinema_booking_system_app/models/requests/auth_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
@@ -7,6 +8,7 @@ import 'package:cinema_booking_system_app/services/auth_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_button.dart';
 
 class ProfilePage extends StatefulWidget {
+  
   const ProfilePage({super.key});
 
   @override
@@ -14,6 +16,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  
   UserModel? _user;
   bool _isLoading = true;
 
@@ -27,6 +30,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = await AuthService.instance.getCurrentUser();
     if (mounted) setState(() { _user = user; _isLoading = false; });
   }
+
+  
 
   Future<void> _logout() async {
     await AuthService.instance.logout();

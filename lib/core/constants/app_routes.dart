@@ -32,4 +32,17 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
+
+  // Admin
+  static const String admin = '/admin';
+  static const String adminMovies = '/admin/movies';
+  static const String adminShowtimes = '/admin/showtimes';
+  static const String adminVouchers = '/admin/vouchers';
+  static const String adminUsers = '/admin/users';
+  static const String adminStaff = '/admin/staff';
+  static const String adminCinema = '/admin/cinema';
+  static const String adminRooms = '/admin/rooms';
+  static const String adminSeats = '/admin/seats';
+  static const String adminStats = '/admin/stats';
+  static const String adminSettings = '/admin/settings';
 }

@@ -6,7 +6,7 @@ class BookingModel {
   final DateTime showtime;
   final List<String> seats;
   final double totalAmount;
-  final String status; // 'pending' | 'confirmed' | 'cancelled'
+  final String status; // 'PENDING' | 'CONFIRMED' | 'CANCELLED'
   final DateTime bookedAt;
 
   const BookingModel({
@@ -40,7 +40,7 @@ class BookingModel {
       seats: parseSeats(json['seats']),
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ??
           (json['total_amount'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] as String? ?? 'pending',
+      status: json['status'] as String? ?? 'PENDING'  ,
       bookedAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : json['booked_at'] != null

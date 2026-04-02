@@ -31,6 +31,7 @@ class BookingService {
     final response = await _dio.post(
       BookingPaths.base,
       data: {
+    
         'showtimeId': showtimeId,
         'seatIds': seatIds,
         'paymentMethod': paymentMethod,

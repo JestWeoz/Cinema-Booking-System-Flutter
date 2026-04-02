@@ -7,7 +7,7 @@ import 'package:cinema_booking_system_app/core/extensions/string_extensions.dart
 import 'package:cinema_booking_system_app/shared/widgets/app_button.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_text_field.dart';
 import 'package:cinema_booking_system_app/services/auth_service.dart';
-import 'package:cinema_booking_system_app/models/requests/register_request.dart';
+import 'package:cinema_booking_system_app/models/requests/auth_requests.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,18 +18,25 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -42,9 +49,12 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       await AuthService.instance.register(
         RegisterRequest(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
+          username: _usernameController.text.trim(),
           password: _passwordController.text,
+          confirmPassword: _confirmPasswordController.text,
+          fullName: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
         ),
       );
       if (mounted) context.go(AppRoutes.home);
@@ -77,6 +87,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 40),
                 AppTextField(
+                  label: 'Username',
+                  hint: 'johndoe',
+                  controller: _usernameController,
+                  validator: (v) => v.isNullOrEmpty ? 'Username is required' : null,
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
                   label: 'Full Name',
                   hint: 'John Doe',
                   controller: _nameController,
@@ -96,6 +113,14 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
+                  label: 'Phone',
+                  hint: '+1234567890',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  validator: (v) => v.isNullOrEmpty ? 'Phone is required' : null,
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
                   label: 'Password',
                   hint: '••••••••',
                   controller: _passwordController,
@@ -108,6 +133,24 @@ class _RegisterPageState extends State<RegisterPage> {
                       _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                     ),
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
+                  label: 'Confirm Password',
+                  hint: '••••••••',
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Please confirm password';
+                    if (v != _passwordController.text) return 'Passwords do not match';
+                    return null;
+                  },
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    ),
+                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
                 ),
                 if (_errorMessage != null) ...[

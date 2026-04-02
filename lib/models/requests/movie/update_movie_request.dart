@@ -1,0 +1,44 @@
+import 'package:cinema_booking_system_app/models/enums.dart';
+
+class UpdateMovieRequest {
+  final String? title;
+  final String? slug;
+  final String? description;
+  final int? duration;
+  final DateTime? releaseDate;
+  final AgeRating? ageRating;
+  final String? language;
+  final String? posterUrl;
+  final String? trailerUrl;
+  final List<String>? categoryIds;
+
+  const UpdateMovieRequest({
+    this.title,
+    this.slug,
+    this.description,
+    this.duration,
+    this.releaseDate,
+    this.ageRating,
+    this.language,
+    this.posterUrl,
+    this.trailerUrl,
+    this.categoryIds,
+  });
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    if (title != null) map['title'] = title;
+    if (slug != null) map['slug'] = slug;
+    if (description != null) map['description'] = description;
+    if (duration != null) map['duration'] = duration;
+    if (releaseDate != null) {
+      map['releaseDate'] = releaseDate!.toIso8601String().split('T').first;
+    }
+    if (ageRating != null) map['ageRating'] = ageRating!.name;
+    if (language != null) map['language'] = language;
+    if (posterUrl != null) map['posterUrl'] = posterUrl;
+    if (trailerUrl != null) map['trailerUrl'] = trailerUrl;
+    if (categoryIds != null) map['categoryIds'] = categoryIds;
+    return map;
+  }
+}

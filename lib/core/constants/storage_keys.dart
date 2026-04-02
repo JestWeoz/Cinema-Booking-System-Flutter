@@ -9,4 +9,5 @@ class StorageKeys {
   static const String isFirstLaunch = 'is_first_launch';
   static const String selectedLanguage = 'selected_language';
   static const String isDarkMode = 'is_dark_mode';
+  static const String userRoles = 'user_roles';
 }

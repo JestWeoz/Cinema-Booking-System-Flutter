@@ -7,7 +7,7 @@ import 'package:cinema_booking_system_app/core/extensions/string_extensions.dart
 import 'package:cinema_booking_system_app/shared/widgets/app_button.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_text_field.dart';
 import 'package:cinema_booking_system_app/services/auth_service.dart';
-import 'package:cinema_booking_system_app/models/requests/login_request.dart';
+import 'package:cinema_booking_system_app/models/requests/auth_requests.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +18,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -40,11 +40,16 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await AuthService.instance.login(
         LoginRequest(
-          email: _emailController.text.trim(),
+          username: _usernameController.text.trim(),
           password: _passwordController.text,
         ),
       );
-      if (mounted) context.go(AppRoutes.home);
+      if (mounted) {
+        final isAdmin = await AuthService.instance.isAdmin();
+        if (mounted) {
+          context.go(isAdmin ? AppRoutes.admin : AppRoutes.home);
+        }
+      }
     } catch (e) {
       setState(() => _errorMessage = 'Đăng nhập thất bại. Kiểm tra email/mật khẩu.');
     } finally {
@@ -64,25 +69,21 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                Text('Welcome Back 🎬', style: Theme.of(context).textTheme.headlineLarge),
+                Text('Chào mừng trở lại 🎬', style: Theme.of(context).textTheme.headlineLarge),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue booking',
+                  'Đăng nhập để tiếp tục đặt vé',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondaryDark,
                       ),
                 ),
                 const SizedBox(height: 40),
                 AppTextField(
-                  label: 'Email',
-                  hint: 'your@email.com',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) => v.isNullOrEmpty
-                      ? 'Email is required'
-                      : !v!.isValidEmail
-                          ? 'Invalid email'
-                          : null,
+                  label: 'Tên đăng nhập',
+                  hint: 'username của bạn',
+                  controller: _usernameController,
+                  keyboardType: TextInputType.text,
+                  validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập tên đăng nhập' : null,
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
@@ -90,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  validator: (v) => v.isNullOrEmpty ? 'Password is required' : null,
+                  validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập mật khẩu' : null,
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -111,15 +112,15 @@ class _LoginPageState extends State<LoginPage> {
                   Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
                 ],
                 const SizedBox(height: 24),
-                AppButton(label: 'Sign In', onPressed: _submit, isLoading: _isLoading),
+                AppButton(label: 'Đăng nhập', onPressed: _submit, isLoading: _isLoading),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Don't have an account? ", style: AppTextStyles.bodyMedium),
+                    Text('Chưa có tài khoản? ', style: AppTextStyles.bodyMedium),
                     TextButton(
                       onPressed: () => context.go(AppRoutes.register),
-                      child: const Text('Sign Up'),
+                      child: const Text('Đăng ký'),
                     ),
                   ],
                 ),

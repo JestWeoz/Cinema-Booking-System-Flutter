@@ -10,6 +10,15 @@ import 'package:cinema_booking_system_app/pages/profile_page.dart';
 import 'package:cinema_booking_system_app/pages/tickets_page.dart';
 import 'package:cinema_booking_system_app/pages/schedules_page.dart';
 import 'package:cinema_booking_system_app/pages/offers_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_menu_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_movie_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_showtime_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_voucher_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_user_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_cinema_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_room_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_stat_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_settings_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
 
 
@@ -17,7 +26,7 @@ class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.login,
     debugLogDiagnostics: true,
     routes: [
       // Auth routes
@@ -30,6 +39,62 @@ class AppRouter {
         path: AppRoutes.register,
         name: 'register',
         builder: (_, __) => const RegisterPage(),
+      ),
+
+      // ─── Admin (no bottom nav shell) ─────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.admin,
+        name: 'admin',
+        builder: (_, __) => const AdminMenuPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminMovies,
+        name: 'adminMovies',
+        builder: (_, __) => const AdminMovieListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminShowtimes,
+        name: 'adminShowtimes',
+        builder: (_, __) => const AdminShowtimeListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminVouchers,
+        name: 'adminVouchers',
+        builder: (_, __) => const AdminVoucherListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminUsers,
+        name: 'adminUsers',
+        builder: (_, __) => const AdminUserListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminStaff,
+        name: 'adminStaff',
+        builder: (_, __) => const AdminUserListPage(staffOnly: true),
+      ),
+      GoRoute(
+        path: AppRoutes.adminCinema,
+        name: 'adminCinema',
+        builder: (_, __) => const AdminCinemaListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminRooms,
+        name: 'adminRooms',
+        builder: (context, state) {
+          final cinemaId = state.uri.queryParameters['cinemaId'] ?? '';
+          final cinemaName = state.uri.queryParameters['cinemaName'] ?? '';
+          return AdminRoomListPage(cinemaId: cinemaId, cinemaName: cinemaName);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adminStats,
+        name: 'adminStats',
+        builder: (_, __) => const AdminStatPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminSettings,
+        name: 'adminSettings',
+        builder: (_, __) => const AdminSettingsPage(),
       ),
 
       // Main app shell with bottom nav

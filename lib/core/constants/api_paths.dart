@@ -1,5 +1,5 @@
 /// Mirror of Spring Boot ApiPaths.java
-/// Base URL (http://10.0.2.2:8081/api/v1) is already in DioClient.
+/// Base URL (http://localhost:8081/api/v1) is already in DioClient.
 /// These paths are appended after the base URL.
 class ApiPaths {
   ApiPaths._();
@@ -16,35 +16,39 @@ abstract class AuthPaths {
 }
 
 abstract class UserPaths {
+  static const String base = '/users';
   static const String me = '/users/me';
   static const String changePassword = '/users/change-password';
   static const String changeAvatar = '/users/change-avatar';
-  // Admin-only
-  static const String lock = '/users/{id}/lock';
-  static const String unlock = '/users/{id}/unlock';
   static String byId(String id) => '/users/$id';
+  static String lock(String id) => '/users/lock/$id';
+  static String unlock(String id) => '/users/unlock/$id';
 }
 
 abstract class MoviePaths {
   static const String base = '/movies';
   static const String nowShowing = '/movies/now-showing';
   static const String comingSoon = '/movies/coming-soon';
-  static const String search = '/movies/search';
   static const String recommended = '/movies/recommended';
+  static const String search = '/movies/search';
   static const String images = '/movies/images';
   static String byId(String id) => '/movies/$id';
+  static String updateStatus(String id) => '/movies/$id/status';
+  static String searchByKeyword(String keyword) => '/movies/search/$keyword';
   static String imageById(String id) => '/movies/$id/images';
 }
 
 abstract class CinemaPaths {
   static const String base = '/cinema';
   static String byId(String id) => '/cinema/$id';
+  static String toggleStatus(String id) => '/cinema/$id/toggle-status';
+  static String roomsByCinema(String cinemaId) => '/cinema/$cinemaId/rooms';
 }
 
 abstract class RoomPaths {
   static const String base = '/rooms';
   static String byId(String id) => '/rooms/$id';
-  static String byCinema(String cinemaId) => '/rooms?cinemaId=$cinemaId';
+  static String toggleStatus(String id) => '/rooms/$id/toggle-status';
 }
 
 abstract class SeatPaths {
@@ -70,6 +74,7 @@ abstract class CategoryPaths {
 abstract class ProductPaths {
   static const String base = '/products';
   static String byId(String id) => '/products/$id';
+  static String toggleActive(String id) => '/products/$id/toggle-active';
 }
 
 abstract class ComboPaths {
@@ -86,16 +91,17 @@ abstract class PeoplePaths {
 
 abstract class PromotionPaths {
   static const String base = '/promotions';
+  static const String active = '/promotions/active';
   static String byId(String id) => '/promotions/$id';
-  static String validate(String code) => '/promotions/validate?code=$code';
+  static String byCode(String code) => '/promotions/code/$code';
 }
 
 abstract class ShowtimePaths {
   static const String base = '/showtimes';
   static String byId(String id) => '/showtimes/$id';
-  static String byMovie(String movieId) => '/showtimes?movieId=$movieId';
-  static String byMovieAndDate(String movieId, String date) =>
-      '/showtimes?movieId=$movieId&date=$date';
+  static String cancel(String id) => '/showtimes/$id/cancel';
+  static String byMovie(String movieId) => '/showtimes/by-movie/$movieId';
+  static String byCinema(String cinemaId) => '/showtimes/by-cinema/$cinemaId';
   static String seats(String showtimeId) => '/showtimes/$showtimeId/seats';
 }
 

@@ -48,8 +48,8 @@ class MovieService {
   /// Tìm kiếm phim
   Future<List<MovieModel>> search(String query) async {
     final response = await _dio.get(
-      MoviePaths.search,
-      queryParameters: {'q': query, 'keyword': query},
+      MoviePaths.searchByKeyword(query),
+      queryParameters: {'page': 0, 'size': 10},
     );
     return _parseList(response.data);
   }
