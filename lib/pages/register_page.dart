@@ -77,10 +77,10 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                Text('Create Account 🍿', style: Theme.of(context).textTheme.headlineLarge),
+                Text('Tạo tài khoản 🍿', style: Theme.of(context).textTheme.headlineLarge),
                 const SizedBox(height: 8),
                 Text(
-                  'Join us and start booking movies',
+                  'Tham gia với chúng tôi và bắt đầu đặt vé xem phim',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondaryDark,
                       ),
@@ -126,7 +126,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   validator: (v) => (v == null || v.length < 6)
-                      ? 'Password must be at least 6 characters'
+                      ? 'Mật khẩu phải có ít nhất 6 ký tự'
                       : null,
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -142,8 +142,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Please confirm password';
-                    if (v != _passwordController.text) return 'Passwords do not match';
+                    if (v == null || v.isEmpty) return 'Vui lòng xác nhận mật khẩu';
+                    if (v != _passwordController.text) return 'Mật khẩu không khớp';
                     return null;
                   },
                   suffixIcon: IconButton(
@@ -158,15 +158,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
                 ],
                 const SizedBox(height: 32),
-                AppButton(label: 'Sign Up', onPressed: _submit, isLoading: _isLoading),
+                AppButton(label: 'Đăng ký', onPressed: _submit, isLoading: _isLoading),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Already have an account? ', style: AppTextStyles.bodyMedium),
+                    Text('Bạn đã có tài khoản? ', style: AppTextStyles.bodyMedium),
                     TextButton(
                       onPressed: () => context.go(AppRoutes.login),
-                      child: const Text('Sign In'),
+                      child: const Text('Đăng nhập'),
                     ),
                   ],
                 ),

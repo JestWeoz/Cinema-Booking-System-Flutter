@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Icon(Icons.movie, color: AppColors.primary, size: 28),
                   const SizedBox(width: 8),
-                  Text('CineBook', style: Theme.of(context).textTheme.headlineSmall),
+                  Text('CinemaBook', style: Theme.of(context).textTheme.headlineSmall),
                 ],
               ),
               actions: [

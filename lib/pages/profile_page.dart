@@ -42,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('Thông tin cá nhân'),
         actions: [
           IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () {}),
         ],
@@ -94,15 +94,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 32),
 
                 // Menu Items
-                _MenuItem(icon: Icons.person_outline, label: 'Edit Profile', onTap: () {}),
-                _MenuItem(icon: Icons.lock_outline, label: 'Change Password', onTap: () {}),
-                _MenuItem(icon: Icons.notifications_outlined, label: 'Notifications', onTap: () {}),
-                _MenuItem(icon: Icons.help_outline, label: 'Help & Support', onTap: () {}),
-                _MenuItem(icon: Icons.info_outline, label: 'About', onTap: () {}),
+                _MenuItem(icon: Icons.person_outline, label: 'Chỉnh sửa thông tin', onTap: () {}),
+                _MenuItem(icon: Icons.lock_outline, label: 'Đổi mật khẩu', onTap: () {}),
+                _MenuItem(icon: Icons.notifications_outlined, label: 'Thông báo', onTap: () {}),
+                _MenuItem(icon: Icons.help_outline, label: 'Trợ giúp & Hỗ trợ', onTap: () {}),
+                _MenuItem(icon: Icons.info_outline, label: 'Thông tin', onTap: () {}),
                 const SizedBox(height: 24),
 
                 AppButton(
-                  label: 'Sign Out',
+                  label: 'Đăng xuất',
                   isOutlined: true,
                   onPressed: _logout,
                 ),

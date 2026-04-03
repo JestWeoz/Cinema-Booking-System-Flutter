@@ -26,12 +26,36 @@ class AdminService {
     return [];
   }
 
-  PaginatedResponse<T> _page<T>(dynamic data, T Function(Map<String, dynamic>) fromJson) {
-    if (data is Map<String, dynamic>) {
-      return PaginatedResponse<T>.fromJson(data, fromJson);
-    }
-    return PaginatedResponse<T>(content: [], totalElements: 0, totalPages: 0, number: 0, size: 10, first: true, last: true);
+  PaginatedResponse<T> _page<T>(
+    dynamic data,
+    T Function(Map<String, dynamic>) fromJson,
+) {
+  if (data is Map<String, dynamic>) {
+    final d = data['data']; // 🔥 QUAN TRỌNG
+
+    return PaginatedResponse<T>(
+      content: (d['items'] as List)
+          .map((e) => fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalElements: d['totalElements'] ?? 0,
+      totalPages: d['totalPages'] ?? 1,
+      number: d['page'] ?? 0,
+      size: d['size'] ?? 10,
+      first: (d['page'] ?? 0) == 0,
+      last: true,
+    );
   }
+
+  return PaginatedResponse<T>(
+    content: [],
+    totalElements: 0,
+    totalPages: 0,
+    number: 0,
+    size: 10,
+    first: true,
+    last: true,
+  );
+}
 
   // ─── Movies ──────────────────────────────────────────────────────────────
 

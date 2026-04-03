@@ -79,8 +79,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 40),
                 AppTextField(
-                  label: 'Tên đăng nhập',
-                  hint: 'username của bạn',
+                  label: 'Username',
+                  hint: 'nhập tên đăng nhập',
                   controller: _usernameController,
                   keyboardType: TextInputType.text,
                   validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập tên đăng nhập' : null,
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {},
-                    child: const Text('Forgot Password?'),
+                    child: const Text('Quên mật khẩu?'),
                   ),
                 ),
                 if (_errorMessage != null) ...[
