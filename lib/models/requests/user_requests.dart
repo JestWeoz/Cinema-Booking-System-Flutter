@@ -1,6 +1,4 @@
-// User Requests — khớp với backend DTO/Request/User/
 import '../enums.dart';
-
 
 class UpdateProfileRequest {
   final String? fullName;
@@ -53,7 +51,9 @@ class ForgotPasswordRequest {
 }
 
 class ChangeAvatarRequest {
-  // Multipart form-data — file sẽ được gửi riêng qua FormData
-  // Class này chỉ là placeholder
-  const ChangeAvatarRequest();
+  final String avatarUrl;
+
+  const ChangeAvatarRequest({required this.avatarUrl});
+
+  Map<String, dynamic> toJson() => {'avatarUrl': avatarUrl};
 }

@@ -10,6 +10,10 @@ import 'package:cinema_booking_system_app/pages/profile_page.dart';
 import 'package:cinema_booking_system_app/pages/tickets_page.dart';
 import 'package:cinema_booking_system_app/pages/schedules_page.dart';
 import 'package:cinema_booking_system_app/pages/offers_page.dart';
+import 'package:cinema_booking_system_app/pages/edit_profile_page.dart';
+import 'package:cinema_booking_system_app/pages/change_password_page.dart';
+import 'package:cinema_booking_system_app/pages/notifications_page.dart';
+import 'package:cinema_booking_system_app/pages/user_settings_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_menu_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_movie_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_showtime_list_page.dart';
@@ -20,7 +24,6 @@ import 'package:cinema_booking_system_app/pages/admin/admin_room_list_page.dart'
 import 'package:cinema_booking_system_app/pages/admin/admin_stat_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_settings_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
-
 
 class AppRouter {
   AppRouter._();
@@ -39,6 +42,26 @@ class AppRouter {
         path: AppRoutes.register,
         name: 'register',
         builder: (_, __) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        name: 'editProfile',
+        builder: (_, __) => const EditProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.changePassword,
+        name: 'changePassword',
+        builder: (_, __) => const ChangePasswordPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        name: 'notifications',
+        builder: (_, __) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        builder: (_, __) => const UserSettingsPage(),
       ),
 
       // ─── Admin (no bottom nav shell) ─────────────────────────────────────

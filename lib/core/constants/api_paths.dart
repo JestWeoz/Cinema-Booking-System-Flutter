@@ -20,6 +20,7 @@ abstract class UserPaths {
   static const String me = '/users/me';
   static const String changePassword = '/users/change-password';
   static const String changeAvatar = '/users/change-avatar';
+  static const String staff = '/users/staff';
   static String byId(String id) => '/users/$id';
   static String lock(String id) => '/users/lock/$id';
   static String unlock(String id) => '/users/unlock/$id';
@@ -110,4 +111,9 @@ abstract class BookingPaths {
   static String byId(String id) => '/bookings/$id';
   static const String my = '/bookings/my';
   static String cancel(String id) => '/bookings/$id/cancel';
+}
+
+abstract class CloudinaryPaths {
+  static const String uploadImage = '/cloudinary/upload-image';
+  static const String uploadVideo = '/cloudinary/upload-video';
 }

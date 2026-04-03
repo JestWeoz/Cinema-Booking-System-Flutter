@@ -30,6 +30,7 @@ class AppRoutes {
   static const String tickets = '/tickets';
   static const String ticketDetail = '/tickets/:id';
   static const String editProfile = '/edit-profile';
+  static const String changePassword = '/change-password';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
 
