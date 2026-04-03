@@ -93,6 +93,8 @@ abstract class PeoplePaths {
 abstract class PromotionPaths {
   static const String base = '/promotions';
   static const String active = '/promotions/active';
+  static const String apply = '/promotions/apply';
+  static const String preview = '/promotions/preview';
   static String byId(String id) => '/promotions/$id';
   static String byCode(String code) => '/promotions/code/$code';
 }
