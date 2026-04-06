@@ -22,8 +22,23 @@ class AppButton extends StatelessWidget {
     this.prefixIcon,
   });
 
+  double _responsiveFontSize(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final scaled = width * 0.038;
+    if (scaled < 13) {
+      return 13;
+    }
+    if (scaled > 16) {
+      return 16;
+    }
+    return scaled;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textStyle = AppTextStyles.labelLarge.copyWith(
+      fontSize: _responsiveFontSize(context),
+    );
     final child = isLoading
         ? const SizedBox(
             width: 22,
@@ -37,7 +52,14 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (prefixIcon != null) ...[prefixIcon!, const SizedBox(width: 8)],
-              Text(label, style: AppTextStyles.labelLarge),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
+              ),
             ],
           );
 

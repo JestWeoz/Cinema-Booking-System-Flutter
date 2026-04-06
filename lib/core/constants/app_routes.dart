@@ -38,6 +38,8 @@ class AppRoutes {
   static const String admin = '/admin';
   static const String adminMovies = '/admin/movies';
   static const String adminShowtimes = '/admin/showtimes';
+  static const String adminShowtimeCreate = '/admin/showtimes/create';
+  static const String adminShowtimeEdit = '/admin/showtimes/:id/edit';
   static const String adminVouchers = '/admin/vouchers';
   static const String adminUsers = '/admin/users';
   static const String adminStaff = '/admin/staff';
@@ -46,4 +48,8 @@ class AppRoutes {
   static const String adminSeats = '/admin/seats';
   static const String adminStats = '/admin/stats';
   static const String adminSettings = '/admin/settings';
+  static const String adminCategories = '/admin/categories';
+  static const String adminProducts = '/admin/products';
+
+  static String adminShowtimeEditById(String id) => '/admin/showtimes/$id/edit';
 }

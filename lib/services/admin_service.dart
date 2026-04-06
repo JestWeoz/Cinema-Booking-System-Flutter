@@ -140,7 +140,17 @@ class AdminService {
   // ─── Rooms ────────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getRoomsByCinema(String cinemaId,{int page = 1, int size = 20}) async {
-    final resp = await _dio.get(CinemaPaths.roomsByCinema(cinemaId), queryParameters: {'page': page, 'size': size});
+    final resp = await _dio.get(
+      RoomPaths.byCinema(cinemaId),
+      queryParameters: {'page': page > 0 ? page - 1 : 0, 'size': size},
+    );
+    if (resp.data is Map<String, dynamic> &&
+        resp.data['data'] is Map<String, dynamic> &&
+        resp.data['data']['items'] is List) {
+      return (resp.data['data']['items'] as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    }
     return _list<Map<String, dynamic>>(resp.data, (e) => e);
   }
 

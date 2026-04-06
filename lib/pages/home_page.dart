@@ -4,6 +4,7 @@ import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/models/movie_model.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
+import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -163,8 +164,12 @@ class _MovieCarousel extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                       child: movie.posterUrl.isNotEmpty
-                          ? Image.network(movie.posterUrl, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.movie_outlined, color: Colors.grey))
+                          ? AppNetworkImage(
+                              url: movie.posterUrl,
+                              fit: BoxFit.cover,
+                              fallbackIcon: Icons.movie_outlined,
+                              backgroundColor: AppColors.dividerDark,
+                            )
                           : Container(
                               color: AppColors.dividerDark,
                               child: const Center(child: Icon(Icons.movie_outlined, color: Colors.grey))),
@@ -233,8 +238,12 @@ class _MovieGrid extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: movie.posterUrl.isNotEmpty
-                  ? Image.network(movie.posterUrl, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.movie_outlined, color: Colors.grey)))
+                  ? AppNetworkImage(
+                      url: movie.posterUrl,
+                      fit: BoxFit.cover,
+                      fallbackIcon: Icons.movie_outlined,
+                      backgroundColor: AppColors.cardDark,
+                    )
                   : const Center(child: Icon(Icons.movie_outlined, color: Colors.grey)),
             ),
           ),

@@ -1,4 +1,5 @@
 // Showtime Responses — khớp với backend DTO/Response/Showtime/
+import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import '../enums.dart';
 
 class ShowtimeSummaryResponse {
@@ -43,7 +44,7 @@ class ShowtimeSummaryResponse {
         id: json['id'] ?? '',
         movieId: json['movieId'] ?? '',
         movieTitle: json['movieTitle'] ?? '',
-        posterUrl: json['posterUrl'],
+        posterUrl: ImageUrlResolver.pick(json, keys: const ['posterUrl']),
         durationMinutes: json['durationMinutes'] ?? 0,
         roomId: json['roomId'] ?? '',
         roomName: json['roomName'] ?? '',
@@ -52,12 +53,8 @@ class ShowtimeSummaryResponse {
         startTime: json['startTime'] ?? '',
         endTime: json['endTime'] ?? '',
         basePrice: (json['basePrice'] ?? 0).toDouble(),
-        language: json['language'] != null
-            ? Language.values.byName(json['language'])
-            : null,
-        status: json['status'] != null
-            ? ShowTimeStatus.values.byName(json['status'])
-            : null,
+        language: languageFromJson(json['language']),
+        status: showTimeStatusFromJson(json['status']),
         availableSeats: json['availableSeats'] ?? 0,
         bookable: json['bookable'] ?? false,
       );
@@ -117,27 +114,21 @@ class ShowtimeDetailResponse {
         id: json['id'] ?? '',
         movieId: json['movieId'] ?? '',
         movieTitle: json['movieTitle'] ?? '',
-        posterUrl: json['posterUrl'],
+        posterUrl: ImageUrlResolver.pick(json, keys: const ['posterUrl']),
         durationMinutes: json['durationMinutes'] ?? 0,
         category: json['category'],
         rating: json['rating'],
         roomId: json['roomId'] ?? '',
         roomName: json['roomName'] ?? '',
-        roomType: json['roomType'] != null
-            ? RoomType.values.byName(json['roomType'])
-            : null,
+        roomType: roomTypeFromJson(json['roomType']),
         cinemaId: json['cinemaId'] ?? '',
         cinemaName: json['cinemaName'] ?? '',
         cinemaAddress: json['cinemaAddress'],
         startTime: json['startTime'] ?? '',
         endTime: json['endTime'] ?? '',
         basePrice: (json['basePrice'] ?? 0).toDouble(),
-        language: json['language'] != null
-            ? Language.values.byName(json['language'])
-            : null,
-        status: json['status'] != null
-            ? ShowTimeStatus.values.byName(json['status'])
-            : null,
+        language: languageFromJson(json['language']),
+        status: showTimeStatusFromJson(json['status']),
         availableSeats: json['availableSeats'] ?? 0,
         bookable: json['bookable'] ?? false,
         ongoing: json['ongoing'] ?? false,

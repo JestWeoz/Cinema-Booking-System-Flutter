@@ -11,13 +11,24 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
-      bottomNavigationBar: _BottomNavBar(),
+      bottomNavigationBar: const _BottomNavBar(),
     );
   }
 }
 
-class _BottomNavBar extends StatelessWidget {
-  final List<_NavItem> _items = const [
+// ─── Dùng StatefulWidget + GoRouter listener ──────────────────────────────────
+// Tránh gọi GoRouterState.of(context) trực tiếp trong build() của NavigationBar
+// vì gây re-entrant rebuild trong mouse device update phase trên Flutter Web,
+// → assertion !_debugDuringDeviceUpdate (mouse_tracker.dart:199)
+class _BottomNavBar extends StatefulWidget {
+  const _BottomNavBar();
+
+  @override
+  State<_BottomNavBar> createState() => _BottomNavBarState();
+}
+
+class _BottomNavBarState extends State<_BottomNavBar> {
+  static const List<_NavItem> _items = [
     _NavItem(
       label: 'Trang Chủ',
       icon: Icons.home_outlined,
@@ -25,9 +36,9 @@ class _BottomNavBar extends StatelessWidget {
       route: AppRoutes.home,
     ),
     _NavItem(
-      label: 'Lịch Chiếu',
-      icon: Icons.calendar_month_outlined,
-      activeIcon: Icons.calendar_month,
+      label: 'Chọn Rạp',
+      icon: Icons.location_on_outlined,
+      activeIcon: Icons.location_on,
       route: AppRoutes.schedules,
     ),
     _NavItem(
@@ -50,10 +61,44 @@ class _BottomNavBar extends StatelessWidget {
     ),
   ];
 
+  RouterDelegate<RouteMatchList>? _delegate;
+  String _location = AppRoutes.home;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.of(context);
+    final delegate = router.routerDelegate;
+    if (delegate != _delegate) {
+      _delegate?.removeListener(_onRouteChange);
+      _delegate = delegate;
+      _delegate!.addListener(_onRouteChange);
+      // Đọc vị trí hiện tại ngay lập tức
+      _location = delegate.currentConfiguration.uri.toString();
+    }
+  }
+
+  void _onRouteChange() {
+    final newLocation =
+        _delegate?.currentConfiguration?.uri.toString() ?? _location;
+    if (newLocation != _location) {
+      // addPostFrameCallback: tránh setState trong middle của mouse device update phase
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _location = newLocation);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _delegate?.removeListener(_onRouteChange);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    int currentIndex = _items.indexWhere((item) => location.startsWith(item.route));
+    int currentIndex =
+        _items.indexWhere((item) => _location.startsWith(item.route));
     if (currentIndex < 0) currentIndex = 0;
 
     return NavigationBar(
@@ -87,3 +132,4 @@ class _NavItem {
     required this.route,
   });
 }
+

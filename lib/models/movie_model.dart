@@ -1,3 +1,5 @@
+import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
+
 class MovieModel {
   final String id;
   final String title;
@@ -41,9 +43,11 @@ class MovieModel {
       title: json['title'] as String? ?? '',
       overview: json['description'] as String? ??
           json['overview'] as String? ?? '',
-      posterUrl: json['posterUrl'] as String? ??
-          json['poster_url'] as String? ?? '',
-      backdropUrl: json['backdropUrl'] as String? ?? json['backdrop_url'] as String?,
+      posterUrl: ImageUrlResolver.pick(json, keys: const ['posterUrl', 'poster_url']) ?? '',
+      backdropUrl: ImageUrlResolver.pick(
+        json,
+        keys: const ['backdropUrl', 'backdrop_url'],
+      ),
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       durationMinutes: json['duration'] as int? ??
           json['durationMinutes'] as int? ?? 0,

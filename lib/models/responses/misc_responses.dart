@@ -1,4 +1,5 @@
 // Promotion, Product, Combo, Cinema, Notification Responses
+import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import '../enums.dart';
 
 // ─── Promotion ────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ class ProductResponse {
         id: json['id'] ?? '',
         name: json['name'] ?? '',
         price: (json['price'] ?? 0).toDouble(),
-        image: json['image'],
+        image: ImageUrlResolver.pick(json, keys: const ['image']),
         active: json['active'],
       );
 }
@@ -128,7 +129,7 @@ class ComboResponse {
         id: json['id'] ?? '',
         name: json['name'] ?? '',
         price: (json['price'] ?? 0).toDouble(),
-        image: json['image'],
+        image: ImageUrlResolver.pick(json, keys: const ['image']),
         description: json['description'],
         active: json['active'] ?? false,
         items: (json['items'] as List<dynamic>?)
@@ -165,7 +166,7 @@ class CinemaResponse {
         address: json['address'] ?? '',
         phone: json['phone'],
         hotline: json['hotline'],
-        logoUrl: json['logoUrl'],
+        logoUrl: ImageUrlResolver.pick(json, keys: const ['logoUrl']),
         status:
             json['status'] != null ? Status.values.byName(json['status']) : null,
       );

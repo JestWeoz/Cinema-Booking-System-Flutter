@@ -2,8 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
 import 'package:cinema_booking_system_app/services/admin_service.dart';
+import 'package:cinema_booking_system_app/services/movie_service.dart';
+import 'package:cinema_booking_system_app/services/category_service.dart';
+import 'package:cinema_booking_system_app/services/people_service.dart';
+import 'package:cinema_booking_system_app/core/utils/media_upload_helper.dart';
 import 'package:cinema_booking_system_app/models/requests/Movie/create_movie_request.dart';
+import 'package:cinema_booking_system_app/models/requests/Movie/update_movie_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/add_people_to_movie_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/create_movie_image_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/people_role_request.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
+import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
+import 'package:cinema_booking_system_app/shared/widgets/image_picker_button.dart';
+import 'package:cinema_booking_system_app/shared/widgets/video_picker_button.dart';
 
 class AdminMovieListPage extends StatefulWidget {
   const AdminMovieListPage({super.key});
@@ -41,20 +52,27 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
     }
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.error));
+  void _snack(String msg, {bool error = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: error ? AppColors.error : AppColors.success,
+    ));
   }
 
   Future<void> _delete(String id) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
         content: const Text('Xoá phim này?', style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xoá', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Huỷ')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Xoá', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -68,13 +86,16 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
     final statuses = MovieStatus.values.where((s) => s != current).toList();
     final chosen = await showDialog<MovieStatus>(
       context: context,
-      builder: (_) => SimpleDialog(
+      useRootNavigator: true,
+      builder: (dialogContext) => SimpleDialog(
         backgroundColor: AppColors.cardDark,
         title: const Text('Đổi trạng thái', style: TextStyle(color: Colors.white)),
-        children: statuses.map((s) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, s),
-          child: Text(s.name, style: const TextStyle(color: Colors.white70)),
-        )).toList(),
+        children: statuses
+            .map((s) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(dialogContext, s),
+                  child: Text(s.name, style: const TextStyle(color: Colors.white70)),
+                ))
+            .toList(),
       ),
     );
     if (chosen != null) {
@@ -85,10 +106,14 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
 
   Color _statusColor(MovieStatus? s) {
     switch (s) {
-      case MovieStatus.NOW_SHOWING: return AppColors.success;
-      case MovieStatus.COMING_SOON: return AppColors.secondary;
-      case MovieStatus.ENDED: return AppColors.textHintDark;
-      default: return AppColors.textHintDark;
+      case MovieStatus.NOW_SHOWING:
+        return AppColors.success;
+      case MovieStatus.COMING_SOON:
+        return AppColors.secondary;
+      case MovieStatus.ENDED:
+        return AppColors.textHintDark;
+      default:
+        return AppColors.textHintDark;
     }
   }
 
@@ -98,10 +123,14 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('Quản lý Phim', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Quản lý Phim',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(icon: const Icon(Icons.add, color: AppColors.primary), onPressed: _showAddDialog),
+          IconButton(
+            icon: const Icon(Icons.add, color: AppColors.primary),
+            onPressed: _showAddMovieSheet,
+          ),
         ],
       ),
       body: Column(
@@ -115,22 +144,36 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
                 hintText: 'Tìm kiếm phim...',
                 hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                 prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                suffixIcon: _search.isEmpty ? null : IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.white54),
-                  onPressed: () { _searchCtrl.clear(); setState(() { _search = ''; }); _load(); },
-                ),
+                suffixIcon: _search.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _search = '');
+                          _load();
+                        },
+                      ),
                 filled: true,
                 fillColor: AppColors.cardDark,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
-              onSubmitted: (v) { setState(() { _search = v; _page = 1; }); _load(); },
+              onSubmitted: (v) {
+                setState(() {
+                  _search = v;
+                  _page = 1;
+                });
+                _load();
+              },
             ),
           ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : _movies.isEmpty
-                    ? const Center(child: Text('Không có phim', style: TextStyle(color: Colors.white54)))
+                    ? const Center(
+                        child: Text('Không có phim', style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         itemCount: _movies.length,
@@ -140,7 +183,11 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
                             movie: m,
                             statusColor: _statusColor(m.status),
                             onDelete: () => _delete(m.id),
-                            onStatus: () => _changeStatus(m.id, m.status ?? MovieStatus.COMING_SOON),
+                            onStatus: () =>
+                                _changeStatus(m.id, m.status ?? MovieStatus.COMING_SOON),
+                            onEdit: () => _showEditMovieSheet(m),
+                            onImages: () => _showManageImagesSheet(m),
+                            onPeople: () => _showManagePeopleSheet(m),
                           );
                         },
                       ),
@@ -161,147 +208,1221 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.white),
-            onPressed: _page > 1 ? () { setState(() => _page--); _load(); } : null,
+            onPressed: _page > 1
+                ? () {
+                    setState(() => _page--);
+                    _load();
+                  }
+                : null,
           ),
           Text('$_page / $totalPages', style: const TextStyle(color: Colors.white)),
           IconButton(
             icon: const Icon(Icons.chevron_right, color: Colors.white),
-            onPressed: _page < totalPages ? () { setState(() => _page++); _load(); } : null,
+            onPressed: _page < totalPages
+                ? () {
+                    setState(() => _page++);
+                    _load();
+                  }
+                : null,
           ),
         ],
       ),
     );
   }
 
-  void _showAddDialog() {
-    final titleCtrl = TextEditingController();
-    final slugCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final durationCtrl = TextEditingController();
-    final posterCtrl = TextEditingController();
-    final trailerCtrl = TextEditingController();
-    final langCtrl = TextEditingController(text: 'VIETNAMESE');
-    AgeRating selectedRating = AgeRating.G;
-    DateTime releaseDate = DateTime.now();
+  // ─── Add Movie Bottom Sheet ──────────────────────────────────────────────
 
-    showDialog(
+  void _showAddMovieSheet() {
+    // Lưu messenger trước khi mở sheet để dùng sau
+    final messenger = ScaffoldMessenger.of(context);
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          backgroundColor: AppColors.cardDark,
-          title: const Text('Thêm Phim', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _AddMovieSheet(
+        onCreated: () {
+          _load();
+          messenger.showSnackBar(const SnackBar(
+            content: Text('Tạo phim thành công!'),
+            backgroundColor: AppColors.success,
+          ));
+        },
+      ),
+    );
+  }
+
+  void _showEditMovieSheet(MovieResponse movie) {
+    final messenger = ScaffoldMessenger.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _EditMovieSheet(
+        movie: movie,
+        onUpdated: () {
+          _load();
+          messenger.showSnackBar(const SnackBar(
+            content: Text('Cập nhật phim thành công!'),
+            backgroundColor: AppColors.success,
+          ));
+        },
+      ),
+    );
+  }
+
+  void _showManageImagesSheet(MovieResponse movie) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _ManageMovieImagesSheet(movie: movie, onChanged: _load),
+    );
+  }
+
+  void _showManagePeopleSheet(MovieResponse movie) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _ManageMoviePeopleSheet(movie: movie, onChanged: _load),
+    );
+  }
+}
+
+// ─── Add Movie Sheet ─────────────────────────────────────────────────────────
+
+class _AddMovieSheet extends StatefulWidget {
+  final VoidCallback onCreated;
+  const _AddMovieSheet({required this.onCreated});
+
+  @override
+  State<_AddMovieSheet> createState() => _AddMovieSheetState();
+}
+
+class _AddMovieSheetState extends State<_AddMovieSheet> {
+  final _titleCtrl = TextEditingController();
+  final _slugCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _durationCtrl = TextEditingController();
+
+  String? _posterUrl;
+  String? _trailerUrl;
+  bool _saving = false;
+  String? _errorMsg;
+
+  // ── Category ──
+  List<CategoryResponse> _categories = [];
+  final Set<String> _selectedCategoryIds = {};
+  bool _categoriesLoading = false;
+
+  AgeRating _ageRating = AgeRating.P;
+  Language _language = Language.ORIGINAL;
+  DateTime _releaseDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() => _categoriesLoading = true);
+    try {
+      final list = await CategoryService.instance.getAll();
+      if (mounted) setState(() => _categories = list);
+    } catch (_) {
+      // categories not critical — form still usable
+    } finally {
+      if (mounted) setState(() => _categoriesLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _slugCtrl.dispose();
+    _descCtrl.dispose();
+    _durationCtrl.dispose();
+    super.dispose();
+  }
+
+  void _setError(String msg) {
+    if (mounted) setState(() => _errorMsg = msg);
+  }
+
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _releaseDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (d != null && mounted) setState(() => _releaseDate = d);
+  }
+
+  Future<void> _save() async {
+    setState(() => _errorMsg = null);
+
+    if (_titleCtrl.text.trim().isEmpty) {
+      _setError('Vui lòng nhập tiêu đề phim');
+      return;
+    }
+    if (_slugCtrl.text.trim().isEmpty) {
+      _setError('Vui lòng nhập slug');
+      return;
+    }
+    if (_durationCtrl.text.trim().isEmpty) {
+      _setError('Vui lòng nhập thời lượng');
+      return;
+    }
+    if (_posterUrl == null || _posterUrl!.isEmpty) {
+      _setError('Vui lòng upload poster phim trước khi tạo');
+      return;
+    }
+    if (_trailerUrl == null || _trailerUrl!.isEmpty) {
+      _setError('Vui lòng upload trailer phim trước khi tạo');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await MovieService.instance.create(CreateMovieRequest(
+        title: _titleCtrl.text.trim(),
+        slug: _slugCtrl.text.trim(),
+        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        duration: int.tryParse(_durationCtrl.text) ?? 90,
+        releaseDate: _releaseDate,
+        ageRating: _ageRating,
+        language: _language.name,
+        posterUrl: _posterUrl!,
+        trailerUrl: _trailerUrl!,
+        categoryIds: _selectedCategoryIds.toList(),
+      ));
+      if (mounted) Navigator.pop(context);
+      widget.onCreated();
+    } catch (e) {
+      _setError('Lỗi tạo phim: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
               children: [
-                _field(titleCtrl, 'Tiêu đề *'),
-                const SizedBox(height: 8),
-                _field(slugCtrl, 'Slug *'),
-                const SizedBox(height: 8),
-                _field(descCtrl, 'Mô tả', maxLines: 3),
-                const SizedBox(height: 8),
-                _field(durationCtrl, 'Thời lượng (phút) *', keyboard: TextInputType.number),
-                const SizedBox(height: 8),
-                _field(posterCtrl, 'URL Poster *'),
-                const SizedBox(height: 8),
-                _field(trailerCtrl, 'URL Trailer *'),
-                const SizedBox(height: 8),
-                _field(langCtrl, 'Ngôn ngữ (vd: VIETNAMESE)'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<AgeRating>(
-                  value: selectedRating,
-                  dropdownColor: AppColors.surfaceDark,
-                  decoration: _inputDeco('Giới hạn tuổi'),
-                  style: const TextStyle(color: Colors.white),
-                  items: AgeRating.values.map((r) => DropdownMenuItem(value: r, child: Text(r.name))).toList(),
-                  onChanged: (v) => setS(() => selectedRating = v!),
+                const Expanded(
+                  child: Text('Thêm Phim Mới',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
-                const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Ngày chiếu: ${releaseDate.toLocal().toString().split(' ')[0]}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.calendar_today, color: AppColors.primary),
-                    onPressed: () async {
-                      final d = await showDatePicker(
-                        context: ctx,
-                        initialDate: releaseDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
-                      );
-                      if (d != null) setS(() => releaseDate = d);
-                    },
-                  ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white54),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              onPressed: () async {
-                if (titleCtrl.text.isEmpty || slugCtrl.text.isEmpty || durationCtrl.text.isEmpty ||
-                    posterCtrl.text.isEmpty || trailerCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Vui lòng điền đủ thông tin *')));
-                  return;
-                }
-                Navigator.pop(ctx);
-                try {
-                  await _service.createMovie(CreateMovieRequest(
-                    title: titleCtrl.text,
-                    slug: slugCtrl.text,
-                    description: descCtrl.text,
-                    duration: int.tryParse(durationCtrl.text) ?? 90,
-                    releaseDate: releaseDate,
-                    ageRating: selectedRating,
-                    language: langCtrl.text,
-                    posterUrl: posterCtrl.text,
-                    trailerUrl: trailerCtrl.text,
-                    categoryIds: [],
-                  ));
-                  _load();
-                } catch (e) {
-                  _snack('Lỗi: $e');
-                }
-              },
-              child: const Text('Tạo'),
+            const SizedBox(height: 16),
+
+            // ── Poster ──
+            const Text('Poster phim *',
+                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 180,
+              child: ImagePickerButton(
+                label: '',
+                currentImageUrl: _posterUrl,
+                size: 180,
+                shape: ImagePickerButtonShape.rectangle,
+                onUploaded: (url) => setState(() => _posterUrl = url),
+                onError: _setError,
+              ),
             ),
+            const SizedBox(height: 12),
+
+            // ── Trailer ──
+            VideoPickerButton(
+              label: 'Trailer phim *',
+              currentVideoUrl: _trailerUrl,
+              onUploaded: (url) => setState(() => _trailerUrl = url),
+              onError: _setError,
+            ),
+            const SizedBox(height: 16),
+
+            // ── Fields ──
+            _field(_titleCtrl, 'Tiêu đề *'),
+            const SizedBox(height: 10),
+            _field(_slugCtrl, 'Slug *'),
+            const SizedBox(height: 10),
+            _field(_descCtrl, 'Mô tả', maxLines: 3),
+            const SizedBox(height: 10),
+            _field(_durationCtrl, 'Thời lượng (phút) *', keyboard: TextInputType.number),
+            const SizedBox(height: 10),
+            _languageDropdown(
+              value: _language,
+              onChanged: (value) => setState(() => _language = value),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Thể loại ──
+            _CategoryPicker(
+              categories: _categories,
+              loading: _categoriesLoading,
+              selectedIds: _selectedCategoryIds,
+              onToggle: (id) => setState(() {
+                if (_selectedCategoryIds.contains(id)) {
+                  _selectedCategoryIds.remove(id);
+                } else {
+                  _selectedCategoryIds.add(id);
+                }
+              }),
+            ),
+            const SizedBox(height: 10),
+
+            // ── Age Rating ──
+            DropdownButtonFormField<AgeRating>(
+              initialValue: _ageRating,
+              isExpanded: true,
+              dropdownColor: AppColors.surfaceDark,
+              decoration: _deco('Giới hạn tuổi'),
+              style: const TextStyle(color: Colors.white),
+              items: AgeRating.values
+                  .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
+                  .toList(),
+              onChanged: (v) => setState(() => _ageRating = v!),
+            ),
+            const SizedBox(height: 10),
+
+            // ── Release Date ──
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: Colors.white54, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ngày chiếu: ${_releaseDate.toLocal().toString().split(' ')[0]}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Submit ──
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Tạo Phim', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            // ── Inline error message ──
+            if (_errorMsg != null) ...
+              [
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMsg!,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _field(TextEditingController c, String hint, {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {
+  Widget _languageDropdown({
+    required Language value,
+    required ValueChanged<Language> onChanged,
+  }) {
+    return DropdownButtonFormField<Language>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: AppColors.surfaceDark,
+      decoration: _deco('Ngôn ngữ'),
+      style: const TextStyle(color: Colors.white),
+      items: Language.values
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(languageLabel(item)),
+              ))
+          .toList(),
+      onChanged: (next) {
+        if (next != null) {
+          onChanged(next);
+        }
+      },
+    );
+  }
+
+  Widget _field(TextEditingController c, String hint,
+      {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {
     return TextField(
       controller: c,
       maxLines: maxLines,
       keyboardType: keyboard,
       style: const TextStyle(color: Colors.white),
-      decoration: _inputDeco(hint),
+      decoration: _deco(hint),
     );
   }
 
-  InputDecoration _inputDeco(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-    filled: true,
-    fillColor: AppColors.surfaceDark,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-  );
+  InputDecoration _deco(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      );
 }
+
+// ─── Edit Movie Sheet ────────────────────────────────────────────────────────
+
+class _EditMovieSheet extends StatefulWidget {
+  final MovieResponse movie;
+  final VoidCallback onUpdated;
+  const _EditMovieSheet({required this.movie, required this.onUpdated});
+
+  @override
+  State<_EditMovieSheet> createState() => _EditMovieSheetState();
+}
+
+class _EditMovieSheetState extends State<_EditMovieSheet> {
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _durationCtrl;
+
+  late String? _posterUrl;
+  late String? _trailerUrl;
+  bool _saving = false;
+  String? _errorMsg;
+
+  // ── Category ──
+  List<CategoryResponse> _categories = [];
+  late Set<String> _selectedCategoryIds;
+  bool _categoriesLoading = false;
+  Language _language = Language.ORIGINAL;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.movie;
+    _titleCtrl = TextEditingController(text: m.title);
+    _descCtrl = TextEditingController(text: m.description);
+    _durationCtrl = TextEditingController(text: m.duration.toString());
+    _language = languageFromJson(m.language) ?? Language.ORIGINAL;
+    _posterUrl = m.posterUrl;
+    _trailerUrl = m.trailerUrl;
+    // Khởi tạo category đã chọn từ movie hiện tại
+    _selectedCategoryIds = m.categories.map((c) => c.id).toSet();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() => _categoriesLoading = true);
+    try {
+      final list = await CategoryService.instance.getAll();
+      if (mounted) setState(() => _categories = list);
+    } catch (_) {
+      // not critical
+    } finally {
+      if (mounted) setState(() => _categoriesLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _durationCtrl.dispose();
+    super.dispose();
+  }
+
+  void _setError(String msg) {
+    if (mounted) setState(() => _errorMsg = msg);
+  }
+
+  Future<void> _save() async {
+    setState(() => _errorMsg = null);
+    setState(() => _saving = true);
+    try {
+      await MovieService.instance.update(
+        widget.movie.id,
+        UpdateMovieRequest(
+          title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+          description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          duration: int.tryParse(_durationCtrl.text),
+          language: _language.name,
+          posterUrl: _posterUrl,
+          trailerUrl: _trailerUrl,
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+      widget.onUpdated();
+    } catch (e) {
+      _setError('Lỗi cập nhật: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Chỉnh Sửa Phim',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Poster ──
+            const Text('Poster phim',
+                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 180,
+              child: ImagePickerButton(
+                label: '',
+                currentImageUrl: _posterUrl,
+                size: 180,
+                shape: ImagePickerButtonShape.rectangle,
+                onUploaded: (url) => setState(() => _posterUrl = url),
+                onError: _setError,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Trailer ──
+            VideoPickerButton(
+              label: 'Trailer phim',
+              currentVideoUrl: _trailerUrl,
+              onUploaded: (url) => setState(() => _trailerUrl = url),
+              onError: _setError,
+            ),
+            const SizedBox(height: 16),
+
+            _field(_titleCtrl, 'Tiêu đề'),
+            const SizedBox(height: 10),
+            _field(_descCtrl, 'Mô tả', maxLines: 3),
+            const SizedBox(height: 10),
+            _field(_durationCtrl, 'Thời lượng (phút)', keyboard: TextInputType.number),
+            const SizedBox(height: 10),
+            _languageDropdown(
+              value: _language,
+              onChanged: (value) => setState(() => _language = value),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Thể loại ──
+            _CategoryPicker(
+              categories: _categories,
+              loading: _categoriesLoading,
+              selectedIds: _selectedCategoryIds,
+              onToggle: (id) => setState(() {
+                if (_selectedCategoryIds.contains(id)) {
+                  _selectedCategoryIds.remove(id);
+                } else {
+                  _selectedCategoryIds.add(id);
+                }
+              }),
+            ),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Lưu Thay Đổi',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            // ── Inline error message ──
+            if (_errorMsg != null) ...
+              [
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMsg!,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _languageDropdown({
+    required Language value,
+    required ValueChanged<Language> onChanged,
+  }) {
+    return DropdownButtonFormField<Language>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: AppColors.surfaceDark,
+      decoration: _deco('Ngôn ngữ'),
+      style: const TextStyle(color: Colors.white),
+      items: Language.values
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(languageLabel(item)),
+              ))
+          .toList(),
+      onChanged: (next) {
+        if (next != null) {
+          onChanged(next);
+        }
+      },
+    );
+  }
+
+  Widget _field(TextEditingController c, String hint,
+      {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {
+    return TextField(
+      controller: c,
+      maxLines: maxLines,
+      keyboardType: keyboard,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+    );
+  }
+
+  InputDecoration _deco(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      );
+}
+
+// ─── Category Picker Widget ───────────────────────────────────────────────────
+
+class _CategoryPicker extends StatelessWidget {
+  final List<CategoryResponse> categories;
+  final Set<String> selectedIds;
+  final bool loading;
+  final void Function(String id) onToggle;
+
+  const _CategoryPicker({
+    required this.categories,
+    required this.selectedIds,
+    required this.loading,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Thể loại',
+              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            if (loading) ...[
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (!loading && categories.isEmpty)
+          Text(
+            'Chưa có thể loại nào. Hãy tạo thể loại trong Quản lý Thể Loại.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 12),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: categories.map((cat) {
+              final selected = selectedIds.contains(cat.id);
+              return FilterChip(
+                label: Text(cat.name),
+                selected: selected,
+                onSelected: (_) => onToggle(cat.id),
+                selectedColor: AppColors.primary.withValues(alpha: 0.25),
+                checkmarkColor: AppColors.primary,
+                labelStyle: TextStyle(
+                  color: selected ? AppColors.primary : Colors.white70,
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                backgroundColor: AppColors.surfaceDark,
+                side: BorderSide(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: 0.7)
+                      : Colors.white.withValues(alpha: 0.15),
+                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManageMovieImagesSheet extends StatefulWidget {
+  final MovieResponse movie;
+  final VoidCallback onChanged;
+
+  const _ManageMovieImagesSheet({
+    required this.movie,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ManageMovieImagesSheet> createState() => _ManageMovieImagesSheetState();
+}
+
+class _ManageMovieImagesSheetState extends State<_ManageMovieImagesSheet> {
+  final MovieService _movieService = MovieService.instance;
+  List<MovieImageResponse> _images = const [];
+  bool _loading = true;
+  bool _uploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final images = await _movieService.getImages(widget.movie.id);
+      if (!mounted) return;
+      setState(() {
+        _images = images;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _uploadMultiple() async {
+    setState(() => _uploading = true);
+    try {
+      final urls = await MediaUploadHelper.pickAndUploadMultipleImages();
+      final request = CreateMovieImageRequest(imageUrls: urls);
+      for (final url in request.imageUrls) {
+        await _movieService.addImage(widget.movie.id, {'imageUrl': url});
+      }
+      if (!mounted) return;
+      widget.onChanged();
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không upload được ảnh: $e'), backgroundColor: AppColors.error),
+      );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _deleteImage(MovieImageResponse image) async {
+    await _movieService.deleteImage(widget.movie.id, image.imageId);
+    if (!mounted) return;
+    widget.onChanged();
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SizedBox(
+        height: 520,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Ảnh phim • ${widget.movie.title}',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                TextButton.icon(
+                  onPressed: _uploading ? null : _uploadMultiple,
+                  icon: _uploading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.add_photo_alternate_outlined),
+                  label: const Text('Upload'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : _images.isEmpty
+                      ? const Center(child: Text('Chưa có ảnh nào', style: TextStyle(color: Colors.white54)))
+                      : GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                          ),
+                          itemCount: _images.length,
+                          itemBuilder: (_, index) {
+                            final image = _images[index];
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AppNetworkImage(
+                                    url: image.imageUrl,
+                                    fit: BoxFit.cover,
+                                    borderRadius: 12,
+                                    backgroundColor: AppColors.surfaceDark,
+                                    iconColor: Colors.white38,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: IconButton(
+                                    onPressed: () => _deleteImage(image),
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ManageMoviePeopleSheet extends StatefulWidget {
+  final MovieResponse movie;
+  final VoidCallback onChanged;
+
+  const _ManageMoviePeopleSheet({
+    required this.movie,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ManageMoviePeopleSheet> createState() => _ManageMoviePeopleSheetState();
+}
+
+class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
+  final MovieService _movieService = MovieService.instance;
+  final PeopleService _peopleService = PeopleService.instance;
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  List<MoviePersonResponse> _currentPeople = const [];
+  List<PeopleResponse> _searchResults = const [];
+  final Set<String> _selectedPeopleIds = <String>{};
+  bool _loading = true;
+  bool _searching = false;
+  MovieRole _role = MovieRole.ACTOR;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrent();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCurrent() async {
+    setState(() => _loading = true);
+    try {
+      final people = await _movieService.getPeople(widget.movie.id);
+      if (!mounted) return;
+      setState(() {
+        _currentPeople = people;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _searchPeople() async {
+    final keyword = _searchCtrl.text.trim();
+    if (keyword.isEmpty) return;
+    setState(() => _searching = true);
+    try {
+      final result = await _peopleService.getAll(keyword: keyword, page: 0, size: 20);
+      if (!mounted) return;
+      setState(() {
+        _searchResults = result.content
+            .where((person) => !_currentPeople.any((item) => item.peopleId == person.id))
+            .toList();
+        _searching = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<void> _addSelected() async {
+    if (_selectedPeopleIds.isEmpty) return;
+    final request = AddPeopleToMovieRequest(
+      people: _selectedPeopleIds
+          .map((id) => PeopleRoleRequest(peopleId: id, role: _role))
+          .toList(),
+    );
+    await _movieService.addPerson(widget.movie.id, request.toJson());
+    if (!mounted) return;
+    _selectedPeopleIds.clear();
+    _searchCtrl.clear();
+    _searchResults = const [];
+    widget.onChanged();
+    _loadCurrent();
+  }
+
+  Future<void> _removePerson(MoviePersonResponse person) async {
+    await _movieService.deletePerson(widget.movie.id, person.peopleId);
+    if (!mounted) return;
+    widget.onChanged();
+    _loadCurrent();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SizedBox(
+        height: 620,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Cast • ${widget.movie.title}',
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Tìm actor/director...',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      filled: true,
+                      fillColor: AppColors.surfaceDark,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (_) => _searchPeople(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                DropdownButton<MovieRole>(
+                  value: _role,
+                  dropdownColor: AppColors.surfaceDark,
+                  style: const TextStyle(color: Colors.white),
+                  items: MovieRole.values
+                      .map((role) => DropdownMenuItem<MovieRole>(value: role, child: Text(role.name)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) setState(() => _role = value);
+                  },
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _searching ? null : _searchPeople,
+                  child: _searching
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Tìm'),
+                ),
+              ],
+            ),
+            if (_searchResults.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _searchResults.map((person) {
+                  final selected = _selectedPeopleIds.contains(person.id);
+                  return FilterChip(
+                    label: Text(person.fullName),
+                    selected: selected,
+                    onSelected: (_) {
+                      setState(() {
+                        if (selected) {
+                          _selectedPeopleIds.remove(person.id);
+                        } else {
+                          _selectedPeopleIds.add(person.id);
+                        }
+                      });
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.22),
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(color: selected ? AppColors.primary : Colors.white70),
+                    backgroundColor: AppColors.surfaceDark,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  onPressed: _selectedPeopleIds.isEmpty ? null : _addSelected,
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: Text('Thêm ${_selectedPeopleIds.length} người'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : _currentPeople.isEmpty
+                      ? const Center(child: Text('Chưa có cast nào', style: TextStyle(color: Colors.white54)))
+                      : ListView.builder(
+                          itemCount: _currentPeople.length,
+                          itemBuilder: (_, index) {
+                            final person = _currentPeople[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                backgroundColor: AppColors.surfaceDark,
+                                child: ClipOval(
+                                  child: SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: AppNetworkImage(
+                                      url: person.avatarUrl,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                      fallbackIcon: Icons.person_outline,
+                                      backgroundColor: AppColors.surfaceDark,
+                                      iconColor: Colors.white54,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              title: Text(person.fullName, style: const TextStyle(color: Colors.white)),
+                              subtitle: Text(person.role, style: const TextStyle(color: Colors.white54)),
+                              trailing: IconButton(
+                                onPressed: () => _removePerson(person),
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Movie Card ───────────────────────────────────────────────────────────────
+
 
 class _MovieCard extends StatelessWidget {
   final MovieResponse movie;
   final Color statusColor;
   final VoidCallback onDelete;
   final VoidCallback onStatus;
+  final VoidCallback onEdit;
+  final VoidCallback onImages;
+  final VoidCallback onPeople;
 
-  const _MovieCard({required this.movie, required this.statusColor, required this.onDelete, required this.onStatus});
+  const _MovieCard({
+    required this.movie,
+    required this.statusColor,
+    required this.onDelete,
+    required this.onStatus,
+    required this.onEdit,
+    required this.onImages,
+    required this.onPeople,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -317,17 +1438,31 @@ class _MovieCard extends StatelessWidget {
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: movie.posterUrl != null
-              ? Image.network(movie.posterUrl!, width: 44, height: 56, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.movie, color: Colors.white54, size: 44))
+              ? AppNetworkImage(
+                  url: movie.posterUrl!,
+                  width: 44,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  borderRadius: 8,
+                  fallbackIcon: Icons.movie,
+                  backgroundColor: AppColors.surfaceDark,
+                  iconColor: Colors.white54,
+                )
               : const Icon(Icons.movie, color: Colors.white54, size: 44),
         ),
-        title: Text(movie.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-            maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          movie.title,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${movie.duration} phút · ${movie.releaseDate ?? ""}',
-                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            Text(
+              '${movie.duration} phút · ${movie.releaseDate ?? ""}',
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -335,8 +1470,19 @@ class _MovieCard extends StatelessWidget {
                 color: statusColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(movie.status?.name ?? 'N/A',
-                  style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600)),
+              child: Text(
+                movie.status?.name ?? 'N/A',
+                style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _ActionChip(label: 'Ảnh', onTap: onImages),
+                _ActionChip(label: 'Cast', onTap: onPeople),
+              ],
             ),
           ],
         ),
@@ -344,10 +1490,21 @@ class _MovieCard extends StatelessWidget {
           color: AppColors.surfaceDark,
           icon: const Icon(Icons.more_vert, color: Colors.white54),
           itemBuilder: (_) => [
-            const PopupMenuItem(value: 'status', child: Text('Đổi trạng thái', style: TextStyle(color: Colors.white))),
-            const PopupMenuItem(value: 'delete', child: Text('Xoá', style: TextStyle(color: Colors.redAccent))),
+            const PopupMenuItem(
+                value: 'edit',
+                child: Text('Chỉnh sửa', style: TextStyle(color: Colors.white))),
+            const PopupMenuItem(
+                value: 'status',
+                child: Text('Đổi trạng thái', style: TextStyle(color: Colors.white))),
+            const PopupMenuItem(
+                value: 'delete',
+                child: Text('Xoá', style: TextStyle(color: Colors.redAccent))),
           ],
-          onSelected: (v) { if (v == 'delete') onDelete(); else if (v == 'status') onStatus(); },
+          onSelected: (v) {
+            if (v == 'delete') onDelete();
+            if (v == 'status') onStatus();
+            if (v == 'edit') onEdit();
+          },
         ),
       ),
     );

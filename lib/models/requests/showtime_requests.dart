@@ -20,7 +20,7 @@ class ShowtimeFilterRequest {
     this.language,
     this.status,
     this.keyword,
-    this.page = 0,
+    this.page = 1,
     this.size = 20,
   });
 
@@ -30,10 +30,10 @@ class ShowtimeFilterRequest {
         if (roomId != null) 'roomId': roomId,
         if (date != null) 'date': date,
         if (language != null) 'language': language!.name,
-        if (status != null) 'status': status!.name,
-        if (keyword != null) 'keyword': keyword,
-        'page': page.toString(),
-        'size': size.toString(),
+        if (status != null) 'status': showTimeStatusToApi(status!),
+        if (keyword != null && keyword!.trim().isNotEmpty) 'keyword': keyword!.trim(),
+        'page': page,
+        'size': size,
       };
 }
 
@@ -62,17 +62,27 @@ class CreateShowtimeRequest {
 }
 
 class UpdateShowtimeRequest {
+  final String? roomId;
   final String? startTime;
   final double? basePrice;
   final String? language;
+  final String? status;
 
-  const UpdateShowtimeRequest({this.startTime, this.basePrice, this.language});
+  const UpdateShowtimeRequest({
+    this.roomId,
+    this.startTime,
+    this.basePrice,
+    this.language,
+    this.status,
+  });
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
+    if (roomId != null) map['roomId'] = roomId;
     if (startTime != null) map['startTime'] = startTime;
     if (basePrice != null) map['basePrice'] = basePrice;
     if (language != null) map['language'] = language;
+    if (status != null) map['status'] = status;
     return map;
   }
 }

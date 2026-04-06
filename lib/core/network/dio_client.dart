@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:cinema_booking_system_app/core/constants/app_constants.dart';
 import 'api_interceptor.dart';
@@ -27,14 +28,20 @@ class DioClient {
     dio.interceptors.addAll([
       AuthInterceptor(dio),
       ApiInterceptor(),
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        error: true,
-        requestHeader: true,
-        responseHeader: false,
-      ),
     ]);
+
+    if (kDebugMode) {
+      dio.interceptors.add(
+        LogInterceptor(
+          requestBody: false,
+          responseBody: false,
+          requestHeader: false,
+          responseHeader: false,
+          error: true,
+          logPrint: (object) => debugPrint(object.toString()),
+        ),
+      );
+    }
 
     return dio;
   }

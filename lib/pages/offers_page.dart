@@ -304,7 +304,7 @@ class _OffersPageState extends State<OffersPage> {
 
   static Color _promoColor(DiscountType? type) {
     switch (type) {
-      case DiscountType.PERCENT:
+      case DiscountType.PERCENTAGE:
         return AppColors.primary;
       case DiscountType.FIXED:
         return AppColors.info;
@@ -328,7 +328,7 @@ class _OfferCard extends StatelessWidget {
 
   Color get _color {
     switch (promotion.discountType) {
-      case DiscountType.PERCENT:
+      case DiscountType.PERCENTAGE:
         return AppColors.primary;
       case DiscountType.FIXED:
         return AppColors.info;
@@ -339,7 +339,7 @@ class _OfferCard extends StatelessWidget {
 
   IconData get _icon {
     switch (promotion.discountType) {
-      case DiscountType.PERCENT:
+      case DiscountType.PERCENTAGE:
         return Icons.percent;
       case DiscountType.FIXED:
         return Icons.attach_money;
@@ -349,7 +349,7 @@ class _OfferCard extends StatelessWidget {
   }
 
   String get _discountText {
-    if (promotion.discountType == DiscountType.PERCENT) {
+    if (promotion.discountType == DiscountType.PERCENTAGE) {
       return 'Giảm ${promotion.discountValue.toInt()}%';
     } else if (promotion.discountType == DiscountType.FIXED) {
       final fmt = NumberFormat('#,###', 'vi');
@@ -607,7 +607,7 @@ class _PromoDetailSheetState extends State<_PromoDetailSheet> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                promo.discountType == DiscountType.PERCENT
+                promo.discountType == DiscountType.PERCENTAGE
                     ? Icons.percent
                     : Icons.attach_money,
                 color: color,
@@ -641,7 +641,7 @@ class _PromoDetailSheetState extends State<_PromoDetailSheet> {
                 children: [
                   _DetailRow(
                     label: 'Loại giảm giá',
-                    value: promo.discountType == DiscountType.PERCENT
+                    value: promo.discountType == DiscountType.PERCENTAGE
                         ? 'Giảm ${promo.discountValue.toInt()}%'
                         : 'Giảm ${_formatCurrency(promo.discountValue)}',
                   ),

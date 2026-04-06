@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
@@ -8,7 +9,7 @@ import 'package:cinema_booking_system_app/pages/movie_detail_page.dart';
 import 'package:cinema_booking_system_app/pages/seat_selection_page.dart';
 import 'package:cinema_booking_system_app/pages/profile_page.dart';
 import 'package:cinema_booking_system_app/pages/tickets_page.dart';
-import 'package:cinema_booking_system_app/pages/schedules_page.dart';
+import 'package:cinema_booking_system_app/pages/cinema_pages/cinema_pages.dart';
 import 'package:cinema_booking_system_app/pages/offers_page.dart';
 import 'package:cinema_booking_system_app/pages/edit_profile_page.dart';
 import 'package:cinema_booking_system_app/pages/change_password_page.dart';
@@ -17,12 +18,16 @@ import 'package:cinema_booking_system_app/pages/user_settings_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_menu_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_movie_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_showtime_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/showtime/admin_showtime_form_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_voucher_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_user_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_cinema_list_page.dart';
-import 'package:cinema_booking_system_app/pages/admin/admin_room_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_stat_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_settings_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_category_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_product_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/cinema/admin_room_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/cinema/admin_seat_list_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
 
 class AppRouter {
@@ -30,7 +35,7 @@ class AppRouter {
 
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.login,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false,
     routes: [
       // Auth routes
       GoRoute(
@@ -81,6 +86,18 @@ class AppRouter {
         builder: (_, __) => const AdminShowtimeListPage(),
       ),
       GoRoute(
+        path: AppRoutes.adminShowtimeCreate,
+        name: 'adminShowtimeCreate',
+        builder: (_, __) => const AdminShowtimeFormPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminShowtimeEdit,
+        name: 'adminShowtimeEdit',
+        builder: (_, state) => AdminShowtimeFormPage(
+          showtimeId: state.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.adminVouchers,
         name: 'adminVouchers',
         builder: (_, __) => const AdminVoucherListPage(),
@@ -110,6 +127,20 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.adminSeats,
+        name: 'adminSeats',
+        builder: (context, state) {
+          final roomId = state.uri.queryParameters['roomId'] ?? '';
+          final roomName = state.uri.queryParameters['roomName'] ?? '';
+          final cinemaName = state.uri.queryParameters['cinemaName'] ?? '';
+          return AdminSeatListPage(
+            roomId: roomId,
+            roomName: roomName,
+            cinemaName: cinemaName,
+          );
+        },
+      ),
+      GoRoute(
         path: AppRoutes.adminStats,
         name: 'adminStats',
         builder: (_, __) => const AdminStatPage(),
@@ -118,6 +149,16 @@ class AppRouter {
         path: AppRoutes.adminSettings,
         name: 'adminSettings',
         builder: (_, __) => const AdminSettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminCategories,
+        name: 'adminCategories',
+        builder: (_, __) => const AdminCategoryListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminProducts,
+        name: 'adminProducts',
+        builder: (_, __) => const AdminProductListPage(),
       ),
 
       // Main app shell with bottom nav
@@ -149,7 +190,7 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.schedules,
             name: 'schedules',
-            builder: (_, __) => const SchedulesPage(),
+            builder: (_, __) => const CinemaPages(),
           ),
           GoRoute(
             path: AppRoutes.offers,
@@ -166,10 +207,15 @@ class AppRouter {
     ],
 
     // Error page
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.error}'),
-      ),
-    ),
+    errorBuilder: (context, state) {
+      if (kDebugMode) {
+        debugPrint('Router error: ${state.error}');
+      }
+      return Scaffold(
+        body: Center(
+          child: Text('Page not found: ${state.error}'),
+        ),
+      );
+    },
   );
 }

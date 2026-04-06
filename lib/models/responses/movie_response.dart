@@ -1,4 +1,5 @@
 // Movie Responses — khớp với backend DTO/Response/Movie/
+import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import '../enums.dart';
 
 class CategoryResponse {
@@ -51,8 +52,8 @@ class MovieResponse {
             ? AgeRating.values.byName(json['ageRating'])
             : null,
         language: json['language'],
-        posterUrl: json['posterUrl'],
-        trailerUrl: json['trailerUrl'],
+        posterUrl: ImageUrlResolver.pick(json, keys: const ['posterUrl']),
+        trailerUrl: ImageUrlResolver.normalize(json['trailerUrl'] as String?),
         status: json['status'] != null
             ? MovieStatus.values.byName(json['status'])
             : null,

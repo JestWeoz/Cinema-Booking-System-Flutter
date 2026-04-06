@@ -1,8 +1,108 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
+import 'package:cinema_booking_system_app/services/dashboard_service.dart';
+import 'package:cinema_booking_system_app/shared/widgets/admin/app_table.dart';
+import 'package:cinema_booking_system_app/shared/widgets/app_shimmer.dart';
 
-class AdminStatPage extends StatelessWidget {
+class AdminStatPage extends StatefulWidget {
   const AdminStatPage({super.key});
+
+  @override
+  State<AdminStatPage> createState() => _AdminStatPageState();
+}
+
+class _AdminStatPageState extends State<AdminStatPage> {
+  final DashboardService _service = DashboardService.instance;
+  final NumberFormat _money = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
+  final NumberFormat _compact = NumberFormat.compact(locale: 'vi');
+
+  bool _loading = true;
+  String? _error;
+  DateTimeRange? _range;
+  StatisticsSummaryResponse? _summary;
+  List<RevenueChartPoint> _revenue = const [];
+  List<TicketChartPoint> _tickets = const [];
+  List<TopMovieResponse> _topMovies = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _pickRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 1),
+      initialDateRange: _range,
+    );
+    if (picked == null) {
+      return;
+    }
+    setState(() => _range = picked);
+    await _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final startDate = _range == null ? null : _isoDate(_range!.start);
+      final endDate = _range == null ? null : _isoDate(_range!.end);
+      final results = await Future.wait<dynamic>([
+        _service.getStatisticsSummary(startDate: startDate, endDate: endDate),
+        _service.getStatisticsRevenueChart(
+          startDate: startDate,
+          endDate: endDate,
+          groupBy: 'DAY',
+        ),
+        _service.getTicketChart(
+          startDate: startDate,
+          endDate: endDate,
+          groupBy: 'DAY',
+        ),
+        _service.getTopMovies(startDate: startDate, endDate: endDate, limit: 10),
+      ]);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _summary = results[0] as StatisticsSummaryResponse;
+        _revenue = results[1] as List<RevenueChartPoint>;
+        _tickets = results[2] as List<TicketChartPoint>;
+        _topMovies = results[3] as List<TopMovieResponse>;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = 'Không tải được thống kê: $error';
+        _loading = false;
+      });
+    }
+  }
+
+  String _isoDate(DateTime value) => value.toIso8601String().split('T').first;
+
+  String _formatRange() {
+    if (_range == null) {
+      return 'Toàn thời gian';
+    }
+    final formatter = DateFormat('dd/MM/yyyy');
+    return '${formatter.format(_range!.start)} - ${formatter.format(_range!.end)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,52 +110,286 @@ class AdminStatPage extends StatelessWidget {
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('Thống Kê', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Thống kê',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _StatCard(title: 'Tổng Doanh Thu', value: '125,000,000 ₫',
-              icon: Icons.attach_money_rounded, color: AppColors.secondary),
-          const SizedBox(height: 12),
-          _StatCard(title: 'Tổng Số Vé', value: '2,245', icon: Icons.confirmation_number, color: AppColors.primary),
-          const SizedBox(height: 12),
-          _StatCard(title: 'Phòng Chiếu', value: '12', icon: Icons.meeting_room_outlined, color: const Color(0xFF9C27B0)),
-          const SizedBox(height: 12),
-          _StatCard(title: 'Khách Hàng', value: '125', icon: Icons.people_outline, color: AppColors.info),
-          const SizedBox(height: 24),
-          const Text('Doanh Thu 7 Ngày Qua', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
-          Container(
-            height: 180,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.cardDark, borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
-            child: CustomPaint(painter: _BarChartPainter()),
+        actions: [
+          IconButton(
+            onPressed: _pickRange,
+            icon: const Icon(Icons.date_range_outlined),
+            tooltip: 'Chọn khoảng ngày',
           ),
-          const SizedBox(height: 24),
-          const Text('Top Phim', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
-          ..._topMovies.map((m) => _TopMovieItem(title: m['title']!, revenue: m['revenue']!)),
         ],
+      ),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _HeaderCard(
+              label: _formatRange(),
+              onClearRange: _range == null
+                  ? null
+                  : () async {
+                      setState(() => _range = null);
+                      await _load();
+                    },
+            ),
+            const SizedBox(height: 16),
+            if (_loading) ..._buildLoading()
+            else if (_error != null)
+              _ErrorCard(message: _error!, onRetry: _load)
+            else ...[
+              _SummaryGrid(
+                summary: _summary!,
+                money: _money,
+                compact: _compact,
+              ),
+              const SizedBox(height: 16),
+              _ChartCard(
+                title: 'Doanh thu',
+                subtitle: 'Biểu đồ doanh thu theo ngày',
+                child: _RevenueChart(points: _revenue, money: _money),
+              ),
+              const SizedBox(height: 16),
+              _ChartCard(
+                title: 'Vé bán ra',
+                subtitle: 'Sản lượng vé theo ngày',
+                child: _TicketChart(points: _tickets),
+              ),
+              const SizedBox(height: 16),
+              _TopMoviesCard(
+                movies: _topMovies,
+                money: _money,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  static const _topMovies = [
-    {'title': 'Avengers: Endgame', 'revenue': '45,000,000 ₫'},
-    {'title': 'Mission Impossible', 'revenue': '32,000,000 ₫'},
-    {'title': 'The Dark Knight', 'revenue': '28,000,000 ₫'},
-  ];
+  List<Widget> _buildLoading() {
+    return [
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: List.generate(
+          4,
+          (_) => const SizedBox(
+            width: 170,
+            child: AppShimmer(width: 170, height: 104, borderRadius: 18),
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+      const AppShimmer(width: double.infinity, height: 280, borderRadius: 18),
+      const SizedBox(height: 16),
+      const AppShimmer(width: double.infinity, height: 280, borderRadius: 18),
+      const SizedBox(height: 16),
+      const AppShimmer(width: double.infinity, height: 320, borderRadius: 18),
+    ];
+  }
 }
 
-class _StatCard extends StatelessWidget {
-  final String title;
+class _HeaderCard extends StatelessWidget {
+  final String label;
+  final VoidCallback? onClearRange;
+
+  const _HeaderCard({
+    required this.label,
+    required this.onClearRange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B0B0C), Color(0xFF0D141F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.insights_outlined, color: AppColors.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Báo cáo quản trị',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          if (onClearRange != null)
+            TextButton.icon(
+              onPressed: onClearRange,
+              icon: const Icon(Icons.close, size: 16),
+              label: const Text('Bỏ lọc'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryGrid extends StatelessWidget {
+  final StatisticsSummaryResponse summary;
+  final NumberFormat money;
+  final NumberFormat compact;
+
+  const _SummaryGrid({
+    required this.summary,
+    required this.money,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _SummaryItem(
+        label: 'Doanh thu',
+        value: money.format(summary.totalRevenue),
+        icon: Icons.attach_money_rounded,
+        color: AppColors.secondary,
+      ),
+      _SummaryItem(
+        label: 'Vé đã bán',
+        value: compact.format(summary.totalTickets),
+        icon: Icons.confirmation_number_outlined,
+        color: AppColors.primary,
+      ),
+      _SummaryItem(
+        label: 'Đơn đặt vé',
+        value: compact.format(summary.totalBookings),
+        icon: Icons.receipt_long_outlined,
+        color: AppColors.info,
+      ),
+      _SummaryItem(
+        label: 'Phim có doanh thu',
+        value: compact.format(summary.totalMovies),
+        icon: Icons.movie_outlined,
+        color: AppColors.success,
+      ),
+    ];
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: items.map((item) => _SummaryCard(item: item)).toList(),
+    );
+  }
+}
+
+class _SummaryItem {
+  final String label;
   final String value;
   final IconData icon;
   final Color color;
-  const _StatCard({required this.title, required this.value, required this.icon, required this.color});
+
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _SummaryCard extends StatelessWidget {
+  final _SummaryItem item;
+
+  const _SummaryCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 170,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: item.color.withValues(alpha: 0.2)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.cardDark,
+            item.color.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: item.color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(item.icon, color: item.color),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            item.label,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            item.value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: item.color,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  const _ChartCard({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,81 +397,378 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-        gradient: LinearGradient(
-          colors: [AppColors.cardDark, color.withValues(alpha: 0.05)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      child: Row(children: [
-        Container(
-          width: 52, height: 52,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
-          child: Icon(icon, color: color, size: 26),
-        ),
-        const SizedBox(width: 16),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: Colors.white54, fontSize: 13)),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 22)),
-        ]),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(height: 220, child: child),
+        ],
+      ),
     );
   }
 }
 
-class _TopMovieItem extends StatelessWidget {
-  final String title;
-  final String revenue;
-  const _TopMovieItem({required this.title, required this.revenue});
+class _RevenueChart extends StatelessWidget {
+  final List<RevenueChartPoint> points;
+  final NumberFormat money;
+
+  const _RevenueChart({
+    required this.points,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (points.isEmpty) {
+      return const _ChartEmpty(message: 'Chưa có dữ liệu doanh thu');
+    }
+
+    final spots = <FlSpot>[];
+    for (var index = 0; index < points.length; index++) {
+      spots.add(FlSpot(index.toDouble(), points[index].revenue));
+    }
+
+    final maxRevenue = points
+        .map((point) => point.revenue)
+        .fold<double>(0, (current, next) => next > current ? next : current);
+
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: maxRevenue == 0 ? 1 : maxRevenue * 1.2,
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        gridData: FlGridData(
+          drawVerticalLine: false,
+          horizontalInterval: maxRevenue == 0 ? 1 : maxRevenue / 4,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: Colors.white.withValues(alpha: 0.06),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 52,
+              getTitlesWidget: (value, _) => Text(
+                money.format(value),
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, _) {
+                final index = value.toInt();
+                if (index < 0 || index >= points.length) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _formatAxisDate(points[index].date),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => AppColors.surfaceDark,
+            getTooltipItems: (spots) => spots
+                .map(
+                  (spot) => LineTooltipItem(
+                    money.format(spot.y),
+                    const TextStyle(color: Colors.white),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: AppColors.primary,
+            barWidth: 3,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                radius: 3,
+                color: AppColors.secondary,
+                strokeColor: Colors.black,
+                strokeWidth: 1,
+              ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.22),
+                  AppColors.primary.withValues(alpha: 0.02),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TicketChart extends StatelessWidget {
+  final List<TicketChartPoint> points;
+
+  const _TicketChart({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    if (points.isEmpty) {
+      return const _ChartEmpty(message: 'Chưa có dữ liệu vé');
+    }
+
+    final maxTickets = points
+        .map((point) => point.ticketCount.toDouble())
+        .fold<double>(0, (current, next) => next > current ? next : current);
+
+    return BarChart(
+      BarChartData(
+        minY: 0,
+        maxY: maxTickets == 0 ? 1 : maxTickets * 1.25,
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        gridData: FlGridData(
+          drawVerticalLine: false,
+          horizontalInterval: maxTickets == 0 ? 1 : maxTickets / 4,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: Colors.white.withValues(alpha: 0.06),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 34,
+              getTitlesWidget: (value, _) => Text(
+                value.toInt().toString(),
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, _) {
+                final index = value.toInt();
+                if (index < 0 || index >= points.length) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _formatAxisDate(points[index].date),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barGroups: List.generate(
+          points.length,
+          (index) => BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: points[index].ticketCount.toDouble(),
+                width: 18,
+                color: AppColors.info,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopMoviesCard extends StatelessWidget {
+  final List<TopMovieResponse> movies;
+  final NumberFormat money;
+
+  const _TopMoviesCard({
+    required this.movies,
+    required this.money,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: AppColors.cardDark, borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
-      child: Row(children: [
-        const Icon(Icons.movie_outlined, color: AppColors.primary, size: 20),
-        const SizedBox(width: 10),
-        Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500))),
-        Text(revenue, style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold, fontSize: 13)),
-      ]),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Top phim',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Top phim theo doanh thu trong khoảng lọc',
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          AppTable(
+            columns: const [
+              AppTableColumn(label: '#', width: FixedColumnWidth(50)),
+              AppTableColumn(label: 'Phim', width: FlexColumnWidth(2.4)),
+              AppTableColumn(label: 'Vé bán', width: FlexColumnWidth(1.2)),
+              AppTableColumn(label: 'Doanh thu', width: FlexColumnWidth(1.6)),
+            ],
+            rows: List.generate(
+              movies.length,
+              (index) => AppTableRowData(
+                cells: [
+                  Text(
+                    '${index + 1}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    movies[index].movieTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    movies[index].totalTickets.toString(),
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    money.format(movies[index].totalRevenue),
+                    style: const TextStyle(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            empty: const _ChartEmpty(message: 'Chưa có phim nào trong kỳ'),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _BarChartPainter extends CustomPainter {
-  final List<double> values = const [0.4, 0.7, 0.55, 0.9, 0.65, 0.8, 0.6];
-  final List<String> labels = const ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+class _ChartEmpty extends StatelessWidget {
+  final String message;
+
+  const _ChartEmpty({required this.message});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final barWidth = (size.width / values.length) * 0.5;
-    final gap = size.width / values.length;
-    final paint = Paint()..shader = const LinearGradient(
-      colors: [AppColors.primary, Color(0xFFFF6B6B)],
-      begin: Alignment.topCenter, end: Alignment.bottomCenter,
-    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    for (int i = 0; i < values.length; i++) {
-      final x = gap * i + gap / 2 - barWidth / 2;
-      final barH = size.height * 0.8 * values[i];
-      final top = size.height * 0.8 - barH;
-      final rrect = RRect.fromRectAndCorners(
-        Rect.fromLTWH(x, top, barWidth, barH),
-        topLeft: const Radius.circular(6), topRight: const Radius.circular(6),
-      );
-      canvas.drawRRect(rrect, paint);
-      final tp = TextPainter(
-        text: TextSpan(text: labels[i], style: const TextStyle(color: Colors.white54, fontSize: 10)),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(x + barWidth / 2 - tp.width / 2, size.height * 0.85));
-    }
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bar_chart_outlined, color: Colors.white.withValues(alpha: 0.24), size: 40),
+          const SizedBox(height: 8),
+          Text(message, style: const TextStyle(color: Colors.white54)),
+        ],
+      ),
+    );
   }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorCard({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 42),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tải lại'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatAxisDate(String raw) {
+  try {
+    final date = DateTime.parse(raw);
+    return DateFormat('dd/MM').format(date);
+  } catch (_) {
+    return raw;
+  }
 }

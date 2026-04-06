@@ -1,4 +1,5 @@
 // Auth & User Responses — khớp với backend DTO/Response/Auth/ và DTO/Response/User/
+import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import '../enums.dart';
 
 // ─── Auth Responses ───────────────────────────────────────────────────────
@@ -94,7 +95,7 @@ class UserResponse {
         fullName: json['fullName'] ?? '',
         email: json['email'] ?? '',
         phone: json['phone'] ?? '',
-        avatarUrl: json['avatarUrl'],
+        avatarUrl: ImageUrlResolver.pick(json, keys: const ['avatarUrl']),
         dob: json['dob'],
         gender: json['gender'] != null
             ? Gender.values.byName(json['gender'])
