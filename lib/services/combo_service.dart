@@ -83,10 +83,12 @@ class ComboService {
   Future<PaginatedResponse<ComboResponse>> getAll({
     int page = 1,
     int size = 10,
+    String? keyword,
   }) async {
     final response = await _dio.get(ComboPaths.base, queryParameters: {
       'page': page,
       'size': size,
+      if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
     });
     return _page(response.data);
   }
@@ -147,7 +149,7 @@ class ComboService {
         onUploading: onUploading,
         onError: onError,
       );
-      if (url != null) data = {...data, 'imageUrl': url};
+      if (url != null) data = {...data, 'image': url};
     }
     return create(data);
   }

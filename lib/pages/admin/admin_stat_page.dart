@@ -51,21 +51,6 @@ class _AdminStatPageState extends State<AdminStatPage> {
     );
   }
 
-  bool _isDefaultRange() {
-    if (_range == null) {
-      return false;
-    }
-    final now = DateTime.now();
-    final defaultStart = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
-    final defaultEnd = DateTime(now.year, now.month, now.day);
-    return _range!.start.year == defaultStart.year &&
-        _range!.start.month == defaultStart.month &&
-        _range!.start.day == defaultStart.day &&
-        _range!.end.year == defaultEnd.year &&
-        _range!.end.month == defaultEnd.month &&
-        _range!.end.day == defaultEnd.day;
-  }
-
   Future<void> _loadCinemas() async {
     try {
       final cinemas = await _cinemaService.getAll();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
 import 'package:cinema_booking_system_app/models/responses/misc_responses.dart';
+import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 
 class CinemaCard extends StatelessWidget {
   final CinemaResponse cinema;
@@ -46,14 +47,29 @@ class CinemaCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  cinema.name.isEmpty ? '?' : cinema.name.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
+                child: (cinema.logoUrl ?? '').trim().isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: AppNetworkImage(
+                          url: cinema.logoUrl,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          borderRadius: 14,
+                          fallbackIcon: Icons.theaters_outlined,
+                          backgroundColor: AppColors.surfaceDark,
+                        ),
+                      )
+                    : Text(
+                        cinema.name.isEmpty
+                            ? '?'
+                            : cinema.name.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(

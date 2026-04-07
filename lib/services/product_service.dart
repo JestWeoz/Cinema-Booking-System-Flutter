@@ -142,7 +142,7 @@ class ProductService {
         onUploading: onUploading,
         onError: onError,
       );
-      if (url != null) data = {...data, 'imageUrl': url};
+      if (url != null) data = {...data, 'image': url};
     }
     return create(data);
   }

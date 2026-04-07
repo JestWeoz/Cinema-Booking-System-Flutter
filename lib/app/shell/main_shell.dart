@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class MainShell extends StatelessWidget {
   final Widget child;
+
   const MainShell({super.key, required this.child});
 
   @override
@@ -16,10 +17,6 @@ class MainShell extends StatelessWidget {
   }
 }
 
-// ─── Dùng StatefulWidget + GoRouter listener ──────────────────────────────────
-// Tránh gọi GoRouterState.of(context) trực tiếp trong build() của NavigationBar
-// vì gây re-entrant rebuild trong mouse device update phase trên Flutter Web,
-// → assertion !_debugDuringDeviceUpdate (mouse_tracker.dart:199)
 class _BottomNavBar extends StatefulWidget {
   const _BottomNavBar();
 
@@ -30,31 +27,25 @@ class _BottomNavBar extends StatefulWidget {
 class _BottomNavBarState extends State<_BottomNavBar> {
   static const List<_NavItem> _items = [
     _NavItem(
-      label: 'Trang Chủ',
+      label: 'Trang chủ',
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       route: AppRoutes.home,
     ),
     _NavItem(
-      label: 'Chọn Rạp',
+      label: 'Chọn rạp',
       icon: Icons.location_on_outlined,
       activeIcon: Icons.location_on,
       route: AppRoutes.schedules,
     ),
     _NavItem(
-      label: 'Vé Của Tôi',
-      icon: Icons.confirmation_number_outlined,
-      activeIcon: Icons.confirmation_number,
-      route: AppRoutes.tickets,
-    ),
-    _NavItem(
-      label: 'Ưu Đãi',
+      label: 'Ưu đãi',
       icon: Icons.local_offer_outlined,
       activeIcon: Icons.local_offer,
       route: AppRoutes.offers,
     ),
     _NavItem(
-      label: 'Cá Nhân',
+      label: 'Cá nhân',
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       route: AppRoutes.profile,
@@ -73,7 +64,6 @@ class _BottomNavBarState extends State<_BottomNavBar> {
       _delegate?.removeListener(_onRouteChange);
       _delegate = delegate;
       _delegate!.addListener(_onRouteChange);
-      // Đọc vị trí hiện tại ngay lập tức
       _location = delegate.currentConfiguration.uri.toString();
     }
   }
@@ -81,12 +71,15 @@ class _BottomNavBarState extends State<_BottomNavBar> {
   void _onRouteChange() {
     final newLocation =
         _delegate?.currentConfiguration?.uri.toString() ?? _location;
-    if (newLocation != _location) {
-      // addPostFrameCallback: tránh setState trong middle của mouse device update phase
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _location = newLocation);
-      });
+    if (newLocation == _location) {
+      return;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => _location = newLocation);
+      }
+    });
   }
 
   @override
@@ -99,7 +92,9 @@ class _BottomNavBarState extends State<_BottomNavBar> {
   Widget build(BuildContext context) {
     int currentIndex =
         _items.indexWhere((item) => _location.startsWith(item.route));
-    if (currentIndex < 0) currentIndex = 0;
+    if (currentIndex < 0) {
+      currentIndex = 0;
+    }
 
     return NavigationBar(
       selectedIndex: currentIndex,
@@ -125,6 +120,7 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String route;
+
   const _NavItem({
     required this.label,
     required this.icon,
@@ -132,4 +128,3 @@ class _NavItem {
     required this.route,
   });
 }
-

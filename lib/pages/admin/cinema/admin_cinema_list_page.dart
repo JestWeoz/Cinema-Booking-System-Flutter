@@ -94,6 +94,7 @@ class _AdminCinemaListPageState extends State<AdminCinemaListPage> {
               address: cinema.address,
               phone: cinema.phone ?? '',
               hotline: cinema.hotline ?? '',
+              logoUrl: cinema.logoUrl ?? '',
             ),
     );
     if (payload == null) return;
@@ -104,6 +105,7 @@ class _AdminCinemaListPageState extends State<AdminCinemaListPage> {
         'address': payload.address,
         'phone': payload.phone,
         'hotline': payload.hotline,
+        'logoUrl': payload.logoUrl,
       };
       if (cinema == null) {
         await _service.create(body);

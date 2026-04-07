@@ -31,13 +31,26 @@ class AppNetworkImage extends StatelessWidget {
     return lower.endsWith('.svg') || lower.contains('.svg?');
   }
 
+  double? _normalizeLogicalSize(double? logicalSize) {
+    if (logicalSize == null || !logicalSize.isFinite || logicalSize <= 0) {
+      return null;
+    }
+    return logicalSize;
+  }
+
   int? _cacheDimension(BuildContext context, double? logicalSize) {
-    if (logicalSize == null || logicalSize <= 0) {
+    final normalizedSize = _normalizeLogicalSize(logicalSize);
+    if (normalizedSize == null) {
       return null;
     }
 
     final devicePixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1;
-    final pixels = (logicalSize * devicePixelRatio).round();
+    final rawPixels = normalizedSize * devicePixelRatio;
+    if (!rawPixels.isFinite || rawPixels <= 0) {
+      return null;
+    }
+
+    final pixels = rawPixels.round();
     if (pixels < 64) return 64;
     if (pixels > 2048) return 2048;
     return pixels;
@@ -46,27 +59,29 @@ class AppNetworkImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedUrl = ImageUrlResolver.normalize(url);
-    final cacheWidth = _cacheDimension(context, width);
-    final cacheHeight = _cacheDimension(context, height);
+    final resolvedWidth = _normalizeLogicalSize(width);
+    final resolvedHeight = _normalizeLogicalSize(height);
+    final cacheWidth = _cacheDimension(context, resolvedWidth);
+    final cacheHeight = _cacheDimension(context, resolvedHeight);
     final image = resolvedUrl == null || resolvedUrl.isEmpty
         ? _fallback()
         : _isSvg(resolvedUrl)
             ? SvgPicture.network(
                 resolvedUrl,
-                width: width,
-                height: height,
+                width: resolvedWidth,
+                height: resolvedHeight,
                 fit: fit,
                 placeholderBuilder: (_) => AppShimmer(
-                  width: width ?? double.infinity,
-                  height: height ?? 200,
+                  width: resolvedWidth ?? double.infinity,
+                  height: resolvedHeight ?? 200,
                   borderRadius: borderRadius,
                 ),
                 errorBuilder: (_, __, ___) => _fallback(),
               )
             : CachedNetworkImage(
                 imageUrl: resolvedUrl,
-                width: width,
-                height: height,
+                width: resolvedWidth,
+                height: resolvedHeight,
                 fit: fit,
                 memCacheWidth: cacheWidth,
                 memCacheHeight: cacheHeight,
@@ -76,8 +91,8 @@ class AppNetworkImage extends StatelessWidget {
                 fadeOutDuration: Duration.zero,
                 filterQuality: FilterQuality.low,
                 placeholder: (_, __) => AppShimmer(
-                  width: width ?? double.infinity,
-                  height: height ?? 200,
+                  width: resolvedWidth ?? double.infinity,
+                  height: resolvedHeight ?? 200,
                   borderRadius: borderRadius,
                 ),
                 errorWidget: (_, __, ___) => _fallback(),
@@ -91,8 +106,8 @@ class AppNetworkImage extends StatelessWidget {
 
   Widget _fallback() {
     return Container(
-      width: width,
-      height: height,
+      width: _normalizeLogicalSize(width),
+      height: _normalizeLogicalSize(height),
       color: backgroundColor,
       alignment: Alignment.center,
       child: Icon(fallbackIcon, color: iconColor),

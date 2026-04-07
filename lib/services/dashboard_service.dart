@@ -2,33 +2,55 @@ import 'package:dio/dio.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
 import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
 
+double _asDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
+int _asInt(dynamic value) {
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
 // ─── Dashboard Summary ────────────────────────────────────────────────────
 
 class DashboardSummaryResponse {
-  final int totalUsers;
-  final int totalMovies;
-  final int totalBookings;
   final double totalRevenue;
-  final int totalCinemas;
-  final int pendingBookings;
+  final int totalTickets;
+  final int totalUsers;
+  final int totalShowtimes;
 
   const DashboardSummaryResponse({
-    required this.totalUsers,
-    required this.totalMovies,
-    required this.totalBookings,
     required this.totalRevenue,
-    required this.totalCinemas,
-    required this.pendingBookings,
+    required this.totalTickets,
+    required this.totalUsers,
+    required this.totalShowtimes,
   });
 
   factory DashboardSummaryResponse.fromJson(Map<String, dynamic> json) =>
       DashboardSummaryResponse(
-        totalUsers: json['totalUsers'] ?? 0,
-        totalMovies: json['totalMovies'] ?? 0,
-        totalBookings: json['totalBookings'] ?? 0,
-        totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
-        totalCinemas: json['totalCinemas'] ?? 0,
-        pendingBookings: json['pendingBookings'] ?? 0,
+        totalRevenue: _asDouble(
+          json['totalRevenue'] ?? json['revenueToday'],
+        ),
+        totalTickets: _asInt(
+          json['totalTickets'] ?? json['ticketsToday'],
+        ),
+        totalUsers: _asInt(
+          json['totalUsers'] ?? json['usersToday'],
+        ),
+        totalShowtimes: _asInt(
+          json['totalShowtimes'] ?? json['showtimeToday'],
+        ),
       );
 }
 
@@ -42,8 +64,8 @@ class RevenueChartPoint {
 
   factory RevenueChartPoint.fromJson(Map<String, dynamic> json) =>
       RevenueChartPoint(
-        date: json['date'] ?? '',
-        revenue: (json['revenue'] ?? 0).toDouble(),
+        date: (json['date'] ?? '').toString(),
+        revenue: _asDouble(json['revenue'] ?? json['value']),
       );
 }
 
@@ -52,22 +74,40 @@ class RevenueChartPoint {
 class StatisticsSummaryResponse {
   final double totalRevenue;
   final int totalTickets;
+  final int totalUsers;
+  final int totalShowtimes;
   final int totalBookings;
   final int totalMovies;
 
   const StatisticsSummaryResponse({
     required this.totalRevenue,
     required this.totalTickets,
+    required this.totalUsers,
+    required this.totalShowtimes,
     required this.totalBookings,
     required this.totalMovies,
   });
 
   factory StatisticsSummaryResponse.fromJson(Map<String, dynamic> json) =>
       StatisticsSummaryResponse(
-        totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
-        totalTickets: json['totalTickets'] ?? 0,
-        totalBookings: json['totalBookings'] ?? 0,
-        totalMovies: json['totalMovies'] ?? 0,
+        totalRevenue: _asDouble(
+          json['totalRevenue'] ?? json['revenueToday'],
+        ),
+        totalTickets: _asInt(
+          json['totalTickets'] ?? json['ticketsToday'],
+        ),
+        totalUsers: _asInt(
+          json['totalUsers'] ?? json['usersToday'],
+        ),
+        totalShowtimes: _asInt(
+          json['totalShowtimes'] ?? json['showtimeToday'],
+        ),
+        totalBookings: _asInt(
+          json['totalBookings'] ?? json['bookingsToday'] ?? json['bookingCount'],
+        ),
+        totalMovies: _asInt(
+          json['totalMovies'] ?? json['moviesToday'] ?? json['movieCount'],
+        ),
       );
 }
 
@@ -79,8 +119,8 @@ class TicketChartPoint {
 
   factory TicketChartPoint.fromJson(Map<String, dynamic> json) =>
       TicketChartPoint(
-        date: json['date'] ?? '',
-        ticketCount: json['ticketCount'] ?? 0,
+        date: (json['date'] ?? '').toString(),
+        ticketCount: _asInt(json['ticketCount'] ?? json['count']),
       );
 }
 
@@ -102,10 +142,10 @@ class TopMovieResponse {
   factory TopMovieResponse.fromJson(Map<String, dynamic> json) =>
       TopMovieResponse(
         movieId: json['movieId'] ?? '',
-        movieTitle: json['movieTitle'] ?? '',
-        posterUrl: json['posterUrl'],
-        totalTickets: json['totalTickets'] ?? 0,
-        totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
+        movieTitle: json['movieTitle'] ?? json['movieName'] ?? '',
+        posterUrl: json['posterUrl'] ?? json['imageUrl'],
+        totalTickets: _asInt(json['totalTickets'] ?? json['tickets']),
+        totalRevenue: _asDouble(json['totalRevenue'] ?? json['revenue']),
       );
 }
 

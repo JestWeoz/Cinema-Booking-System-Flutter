@@ -13,6 +13,14 @@ class ImageUrlResolver {
       return null;
     }
 
+    final lower = trimmed.toLowerCase();
+    if (lower == 'null' ||
+        lower == 'undefined' ||
+        lower == 'n/a' ||
+        lower == 'nan') {
+      return null;
+    }
+
     final embeddedUrl = _extractEmbeddedHttpUrl(trimmed);
     if (embeddedUrl != null) {
       return embeddedUrl;
