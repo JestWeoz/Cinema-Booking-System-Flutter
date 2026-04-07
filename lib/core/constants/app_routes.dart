@@ -51,6 +51,7 @@ class AppRoutes {
   static const String adminSettings = '/admin/settings';
   static const String adminCategories = '/admin/categories';
   static const String adminProducts = '/admin/products';
+  static const String adminPeople = '/admin/people';
 
   static String adminShowtimeEditById(String id) => '/admin/showtimes/$id/edit';
 }
