@@ -323,7 +323,7 @@ class _ProductFormDialogState extends State<_ProductFormDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_imageUrl == null || _imageUrl!.isEmpty) {
-      setState(() => _error = 'Vui lòng upload ảnh sản phẩm');
+      setState(() => _error = 'Vui lòng tải ảnh sản phẩm lên');
       return;
     }
     setState(() {

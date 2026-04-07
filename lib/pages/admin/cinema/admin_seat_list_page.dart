@@ -72,8 +72,11 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
     for (final seat in _seats) {
       grouped.putIfAbsent(seat.seatRow, () => <SeatResponse>[]).add(seat);
     }
-    final entries = grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    return {for (final entry in entries) entry.key: entry.value..sort(_sortSeat)};
+    final entries = grouped.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return {
+      for (final entry in entries) entry.key: entry.value..sort(_sortSeat)
+    };
   }
 
   Future<void> _createSeat() async {
@@ -182,17 +185,24 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
       context: context,
       useRootNavigator: true,
       backgroundColor: AppColors.cardDark,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(999))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(999))),
             const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: Colors.white70),
-              title: Text('Chỉnh sửa ghế ${seat.seatRow}${seat.seatNumber}', style: const TextStyle(color: Colors.white)),
+              title: Text('Chỉnh sửa ghế ${seat.seatRow}${seat.seatNumber}',
+                  style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.of(sheetContext, rootNavigator: true).pop();
                 _editSeat(seat);
@@ -200,18 +210,23 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
             ),
             ListTile(
               leading: Icon(
-                seat.active ? Icons.toggle_off_outlined : Icons.toggle_on_outlined,
+                seat.active
+                    ? Icons.toggle_off_outlined
+                    : Icons.toggle_on_outlined,
                 color: seat.active ? Colors.orangeAccent : AppColors.success,
               ),
-              title: Text(seat.active ? 'Tắt ghế' : 'Bật ghế', style: const TextStyle(color: Colors.white)),
+              title: Text(seat.active ? 'Tắt ghế' : 'Bật ghế',
+                  style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.of(sheetContext, rootNavigator: true).pop();
                 _toggleSeat(seat);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: const Text('Xoá ghế', style: TextStyle(color: Colors.white)),
+              leading:
+                  const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title:
+                  const Text('Xoá ghế', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.of(sheetContext, rootNavigator: true).pop();
                 _deleteSeat(seat);
@@ -241,7 +256,8 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           'Ghế • ${widget.roomName}',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           overflow: TextOverflow.ellipsis,
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -257,8 +273,10 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
               }
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: _SeatAction.single, child: Text('Tạo ghế lẻ')),
-              PopupMenuItem(value: _SeatAction.bulk, child: Text('Tạo nhiều ghế')),
+              PopupMenuItem(
+                  value: _SeatAction.single, child: Text('Tạo ghế lẻ')),
+              PopupMenuItem(
+                  value: _SeatAction.bulk, child: Text('Tạo nhiều ghế')),
             ],
           ),
         ],
@@ -269,7 +287,8 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
         child: const Icon(Icons.event_seat_outlined, color: Colors.white),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : _error != null
               ? SeatErrorView(message: _error!, onRetry: _load)
               : RefreshIndicator(
@@ -288,12 +307,10 @@ class _AdminSeatListPageState extends State<AdminSeatListPage> {
                       if (_seats.isEmpty)
                         const SeatEmptyView()
                       else
-                        ..._groupedSeats.entries.map(
-                          (entry) => SeatRowCard(
-                            rowLabel: entry.key,
-                            seats: entry.value,
-                            onTapSeat: _showSeatActions,
-                          ),
+                        SeatMapBoard(
+                          groupedSeats: _groupedSeats,
+                          seatTypes: _seatTypes,
+                          onTapSeat: _showSeatActions,
                         ),
                     ],
                   ),

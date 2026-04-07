@@ -182,6 +182,21 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     }
   }
 
+  String _personRoleLabel(String value) {
+    switch (value.toUpperCase()) {
+      case 'ACTOR':
+        return 'Diễn viên';
+      case 'DIRECTOR':
+        return 'Đạo diễn';
+      case 'PRODUCER':
+        return 'Nhà sản xuất';
+      case 'WRITER':
+        return 'Biên kịch';
+      default:
+        return value;
+    }
+  }
+
   Color _statusColor(MovieStatus? status) {
     switch (status) {
       case MovieStatus.NOW_SHOWING:
@@ -692,7 +707,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    person.role,
+                    _personRoleLabel(person.role),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.white54, fontSize: 12),

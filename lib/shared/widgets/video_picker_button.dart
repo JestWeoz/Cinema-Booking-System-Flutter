@@ -51,7 +51,7 @@ class _VideoPickerButtonState extends State<VideoPickerButton> {
           (e) {
             messenger.showSnackBar(
               SnackBar(
-                content: Text('Lỗi upload video: $e'),
+                content: Text('Lỗi tải video lên: $e'),
                 backgroundColor: AppColors.error,
               ),
             );
@@ -130,7 +130,7 @@ class _VideoPickerButtonState extends State<VideoPickerButton> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 8),
-                    Text('Đang upload video...', style: TextStyle(fontSize: 12)),
+                    Text('Đang tải video lên...', style: TextStyle(fontSize: 12)),
                   ],
                 ),
               )
@@ -156,7 +156,7 @@ class _VideoPickerButtonState extends State<VideoPickerButton> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        hasVideo ? 'Đã upload • Nhấn để thay đổi' : 'Nhấn để chọn video',
+                        hasVideo ? 'Đã tải lên • Nhấn để thay đổi' : 'Nhấn để chọn video',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,

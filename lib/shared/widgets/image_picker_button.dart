@@ -75,7 +75,7 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
         setState(() => _uploadedUrl = url);
         widget.onUploaded(url);
       } else if (mounted) {
-        _showError('Upload thất bại, vui lòng thử lại');
+        _showError('Tải ảnh lên thất bại, vui lòng thử lại');
       }
     } catch (e) {
       if (mounted) _showError(e.toString());
@@ -90,7 +90,7 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Lỗi upload: $msg'),
+          content: Text('Lỗi tải ảnh lên: $msg'),
           backgroundColor: AppColors.error,
         ),
       );

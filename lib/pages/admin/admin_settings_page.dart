@@ -36,6 +36,19 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
   bool _obscureNew = true;
   bool _obscureConfirm = true;
 
+  String _roleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'STAFF':
+        return 'Nhân viên';
+      case 'USER':
+        return 'Người dùng';
+      default:
+        return role;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -162,7 +175,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
           }
         },
         onError: (error) {
-          if (mounted) _snack('Upload avatar thất bại: $error');
+          if (mounted) _snack('Tải ảnh đại diện thất bại: $error');
         },
       );
       if (user == null) {
@@ -404,7 +417,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
               TextButton.icon(
                 onPressed: _uploadingAvatar ? null : _changeAvatar,
                 icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text('Avatar'),
+                label: const Text('Ảnh đại diện'),
               ),
             ],
           ),
@@ -422,7 +435,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        role,
+                        _roleLabel(role),
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -495,7 +508,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   .map(
                     (gender) => DropdownMenuItem<Gender>(
                       value: gender,
-                      child: Text(gender.name),
+                      child: Text(genderLabel(gender)),
                     ),
                   )
                   .toList(),

@@ -29,6 +29,19 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
   String? _roleFilter;
   bool? _statusFilter;
 
+  String _roleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'STAFF':
+        return 'Nhân viên';
+      case 'USER':
+        return 'Người dùng';
+      default:
+        return role;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -157,12 +170,12 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
                         isExpanded: true,
                         dropdownColor: AppColors.surfaceDark,
                         style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(labelText: 'Role'),
+                        decoration: const InputDecoration(labelText: 'Vai trò'),
                         items: const [
-                          DropdownMenuItem<String?>(value: null, child: Text('Tất cả role')),
-                          DropdownMenuItem<String?>(value: 'ADMIN', child: Text('ADMIN')),
-                          DropdownMenuItem<String?>(value: 'STAFF', child: Text('STAFF')),
-                          DropdownMenuItem<String?>(value: 'USER', child: Text('USER')),
+                          DropdownMenuItem<String?>(value: null, child: Text('Tất cả vai trò')),
+                          DropdownMenuItem<String?>(value: 'ADMIN', child: Text('Quản trị viên')),
+                          DropdownMenuItem<String?>(value: 'STAFF', child: Text('Nhân viên')),
+                          DropdownMenuItem<String?>(value: 'USER', child: Text('Người dùng')),
                         ],
                         onChanged: (value) {
                           setState(() => _roleFilter = value);
@@ -268,7 +281,7 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
-                                                  role,
+                                                  _roleLabel(role),
                                                   style: TextStyle(
                                                     color: role.toUpperCase().contains('ADMIN') ? AppColors.primary : AppColors.info,
                                                     fontSize: 9,

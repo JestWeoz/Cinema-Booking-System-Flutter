@@ -160,7 +160,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           onError: (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Lỗi upload ảnh: $e'),
+                                content: Text('Lỗi tải ảnh lên: $e'),
                                 backgroundColor: AppColors.error,
                               ),
                             );

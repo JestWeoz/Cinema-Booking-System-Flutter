@@ -95,11 +95,11 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    _SectionTitle(title: 'Now Showing', onSeeAll: () {}),
+                    _SectionTitle(title: 'Đang chiếu', onSeeAll: () {}),
                     const SizedBox(height: 12),
                     _MovieCarousel(movies: _nowShowing),
                     const SizedBox(height: 24),
-                    _SectionTitle(title: 'Coming Soon', onSeeAll: () {}),
+                    _SectionTitle(title: 'Sắp chiếu', onSeeAll: () {}),
                     const SizedBox(height: 12),
                     _MovieGrid(movies: _comingSoon),
                   ]),
@@ -123,7 +123,7 @@ class _SectionTitle extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: Theme.of(context).textTheme.titleLarge),
-        TextButton(onPressed: onSeeAll, child: const Text('See All')),
+        TextButton(onPressed: onSeeAll, child: const Text('Xem tất cả')),
       ],
     );
   }

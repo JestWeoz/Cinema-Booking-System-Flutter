@@ -97,7 +97,7 @@ String roomTypeLabel(RoomType? type) {
     case RoomType.SWEETBOX:
       return 'Sweetbox';
     default:
-      return 'N/A';
+      return 'Không rõ';
   }
 }
 
@@ -120,13 +120,13 @@ Language? languageFromJson(dynamic raw) {
 String languageLabel(Language? language) {
   switch (language) {
     case Language.ORIGINAL:
-      return 'Original';
+      return 'Nguyên bản';
     case Language.DUBBED:
-      return 'Dubbed';
+      return 'Lồng tiếng';
     case Language.SUBTITLED:
-      return 'Subtitled';
+      return 'Phụ đề';
     default:
-      return 'N/A';
+      return 'Không rõ';
   }
 }
 
@@ -163,14 +163,42 @@ String showTimeStatusToApi(ShowTimeStatus status) {
 String showTimeStatusLabel(ShowTimeStatus? status) {
   switch (status) {
     case ShowTimeStatus.SCHEDULED:
-      return 'Scheduled';
+      return 'Sắp chiếu';
     case ShowTimeStatus.ONGOING:
-      return 'Ongoing';
+      return 'Đang chiếu';
     case ShowTimeStatus.FINISHED:
-      return 'Finished';
+      return 'Đã kết thúc';
     case ShowTimeStatus.CANCELLED:
-      return 'Cancelled';
+      return 'Đã hủy';
     default:
-      return 'N/A';
+      return 'Không rõ';
+  }
+}
+
+String genderLabel(Gender? gender) {
+  switch (gender) {
+    case Gender.MALE:
+      return 'Nam';
+    case Gender.FEMALE:
+      return 'Nữ';
+    case Gender.OTHER:
+      return 'Khác';
+    default:
+      return 'Không rõ';
+  }
+}
+
+String movieRoleLabel(MovieRole? role) {
+  switch (role) {
+    case MovieRole.ACTOR:
+      return 'Diễn viên';
+    case MovieRole.DIRECTOR:
+      return 'Đạo diễn';
+    case MovieRole.PRODUCER:
+      return 'Nhà sản xuất';
+    case MovieRole.WRITER:
+      return 'Biên kịch';
+    default:
+      return 'Không rõ';
   }
 }

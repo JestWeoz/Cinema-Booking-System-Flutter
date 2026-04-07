@@ -55,7 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Lỗi upload ảnh: $e'),
+              content: Text('Lỗi tải ảnh lên: $e'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -141,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 6),
                 Center(
                   child: Text(
-                    _avatarUploading ? 'Đang upload...' : 'Nhấn vào ảnh để thay đổi',
+                    _avatarUploading ? 'Đang tải ảnh lên...' : 'Nhấn vào ảnh để thay đổi',
                     style: TextStyle(
                       fontSize: 11,
                       color: _avatarUploading ? AppColors.primary : Colors.grey,
@@ -151,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    _user?.name ?? 'Guest',
+                    _user?.name ?? 'Khách',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),

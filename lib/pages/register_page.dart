@@ -87,17 +87,17 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 40),
                 AppTextField(
-                  label: 'Username',
+                  label: 'Tên đăng nhập',
                   hint: 'johndoe',
                   controller: _usernameController,
-                  validator: (v) => v.isNullOrEmpty ? 'Username is required' : null,
+                  validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập tên đăng nhập' : null,
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
-                  label: 'Full Name',
+                  label: 'Họ và tên',
                   hint: 'John Doe',
                   controller: _nameController,
-                  validator: (v) => v.isNullOrEmpty ? 'Name is required' : null,
+                  validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập họ và tên' : null,
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
@@ -106,22 +106,22 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) => v.isNullOrEmpty
-                      ? 'Email is required'
+                      ? 'Vui lòng nhập email'
                       : !v!.isValidEmail
-                          ? 'Invalid email'
+                          ? 'Email không hợp lệ'
                           : null,
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
-                  label: 'Phone',
+                  label: 'Số điện thoại',
                   hint: '+1234567890',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  validator: (v) => v.isNullOrEmpty ? 'Phone is required' : null,
+                  validator: (v) => v.isNullOrEmpty ? 'Vui lòng nhập số điện thoại' : null,
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
-                  label: 'Password',
+                  label: 'Mật khẩu',
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -137,7 +137,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
-                  label: 'Confirm Password',
+                  label: 'Xác nhận mật khẩu',
                   hint: '••••••••',
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,

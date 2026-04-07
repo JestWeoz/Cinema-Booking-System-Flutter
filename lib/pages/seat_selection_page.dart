@@ -33,7 +33,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Select Seats')),
+      appBar: AppBar(title: const Text('Chọn ghế')),
       body: Column(
         children: [
           // Screen indicator
@@ -47,7 +47,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Text('SCREEN', style: TextStyle(color: Colors.grey, fontSize: 12, letterSpacing: 4)),
+          const Text('MÀN HÌNH', style: TextStyle(color: Colors.grey, fontSize: 12, letterSpacing: 4)),
           const SizedBox(height: 24),
 
           // Seat Grid
@@ -102,22 +102,22 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: const [
-                    _LegendItem(color: AppColors.seatAvailable, label: 'Available'),
-                    _LegendItem(color: AppColors.seatSelected, label: 'Selected'),
+                    _LegendItem(color: AppColors.seatAvailable, label: 'Còn trống'),
+                    _LegendItem(color: AppColors.seatSelected, label: 'Đã chọn'),
                     _LegendItem(color: AppColors.seatVip, label: 'VIP'),
-                    _LegendItem(color: AppColors.seatBooked, label: 'Booked'),
+                    _LegendItem(color: AppColors.seatBooked, label: 'Đã đặt'),
                   ],
                 ),
                 const SizedBox(height: 16),
                 if (_selectedSeats.isNotEmpty)
                   Text(
-                    'Selected: ${_selectedSeats.join(', ')}',
+                    'Ghế đã chọn: ${_selectedSeats.join(', ')}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: _selectedSeats.isEmpty ? null : () {},
-                  child: Text('Confirm ${_selectedSeats.length} Seat(s)'),
+                  child: Text('Xác nhận ${_selectedSeats.length} ghế'),
                 ),
               ],
             ),

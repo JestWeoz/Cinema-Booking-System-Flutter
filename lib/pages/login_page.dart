@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 40),
                 AppTextField(
-                  label: 'Username',
+                  label: 'Tên đăng nhập',
                   hint: 'nhập tên đăng nhập',
                   controller: _usernameController,
                   keyboardType: TextInputType.text,
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 AppTextField(
-                  label: 'Password',
+                  label: 'Mật khẩu',
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,

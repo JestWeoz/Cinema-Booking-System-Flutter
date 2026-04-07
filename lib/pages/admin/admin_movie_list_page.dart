@@ -93,7 +93,7 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
         children: statuses
             .map((s) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(dialogContext, s),
-                  child: Text(s.name, style: const TextStyle(color: Colors.white70)),
+                  child: Text(_movieStatusLabel(s), style: const TextStyle(color: Colors.white70)),
                 ))
             .toList(),
       ),
@@ -114,6 +114,19 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
         return AppColors.textHintDark;
       default:
         return AppColors.textHintDark;
+    }
+  }
+
+  String _movieStatusLabel(MovieStatus? status) {
+    switch (status) {
+      case MovieStatus.NOW_SHOWING:
+        return 'Đang chiếu';
+      case MovieStatus.COMING_SOON:
+        return 'Sắp chiếu';
+      case MovieStatus.ENDED:
+        return 'Đã kết thúc';
+      default:
+        return 'Không rõ';
     }
   }
 
@@ -388,11 +401,11 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
       return;
     }
     if (_posterUrl == null || _posterUrl!.isEmpty) {
-      _setError('Vui lòng upload poster phim trước khi tạo');
+      _setError('Vui lòng tải poster phim lên trước khi tạo');
       return;
     }
     if (_trailerUrl == null || _trailerUrl!.isEmpty) {
-      _setError('Vui lòng upload trailer phim trước khi tạo');
+      _setError('Vui lòng tải trailer phim lên trước khi tạo');
       return;
     }
 
@@ -1075,7 +1088,7 @@ class _ManageMovieImagesSheetState extends State<_ManageMovieImagesSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không upload được ảnh: $e'), backgroundColor: AppColors.error),
+        SnackBar(content: Text('Không tải ảnh lên được: $e'), backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -1114,7 +1127,7 @@ class _ManageMovieImagesSheetState extends State<_ManageMovieImagesSheet> {
                   icon: _uploading
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.add_photo_alternate_outlined),
-                  label: const Text('Upload'),
+                  label: const Text('Tải lên'),
                 ),
               ],
             ),
@@ -1261,6 +1274,21 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
     _loadCurrent();
   }
 
+  String _personRoleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'ACTOR':
+        return 'Diễn viên';
+      case 'DIRECTOR':
+        return 'Đạo diễn';
+      case 'PRODUCER':
+        return 'Nhà sản xuất';
+      case 'WRITER':
+        return 'Biên kịch';
+      default:
+        return role;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1275,7 +1303,7 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cast • ${widget.movie.title}',
+            Text('Diễn viên • ${widget.movie.title}',
                 style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
@@ -1285,7 +1313,7 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
                     controller: _searchCtrl,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Tìm actor/director...',
+                      hintText: 'Tìm diễn viên/đạo diễn...',
                       hintStyle: const TextStyle(color: Colors.white38),
                       prefixIcon: const Icon(Icons.search, color: Colors.white54),
                       filled: true,
@@ -1304,7 +1332,7 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
                   dropdownColor: AppColors.surfaceDark,
                   style: const TextStyle(color: Colors.white),
                   items: MovieRole.values
-                      .map((role) => DropdownMenuItem<MovieRole>(value: role, child: Text(role.name)))
+                      .map((role) => DropdownMenuItem<MovieRole>(value: role, child: Text(movieRoleLabel(role))))
                       .toList(),
                   onChanged: (value) {
                     if (value != null) setState(() => _role = value);
@@ -1386,7 +1414,7 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
                                 ),
                               ),
                               title: Text(person.fullName, style: const TextStyle(color: Colors.white)),
-                              subtitle: Text(person.role, style: const TextStyle(color: Colors.white54)),
+                              subtitle: Text(_personRoleLabel(person.role), style: const TextStyle(color: Colors.white54)),
                               trailing: IconButton(
                                 onPressed: () => _removePerson(person),
                                 icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
@@ -1423,6 +1451,19 @@ class _MovieCard extends StatelessWidget {
     required this.onImages,
     required this.onPeople,
   });
+
+  String _movieStatusLabel(MovieStatus? status) {
+    switch (status) {
+      case MovieStatus.NOW_SHOWING:
+        return 'Đang chiếu';
+      case MovieStatus.COMING_SOON:
+        return 'Sắp chiếu';
+      case MovieStatus.ENDED:
+        return 'Đã kết thúc';
+      default:
+        return 'Không rõ';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1471,7 +1512,7 @@ class _MovieCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                movie.status?.name ?? 'N/A',
+                _movieStatusLabel(movie.status),
                 style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600),
               ),
             ),
@@ -1481,7 +1522,7 @@ class _MovieCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 _ActionChip(label: 'Ảnh', onTap: onImages),
-                _ActionChip(label: 'Cast', onTap: onPeople),
+                _ActionChip(label: 'Diễn viên', onTap: onPeople),
               ],
             ),
           ],

@@ -21,7 +21,7 @@ import 'package:cinema_booking_system_app/pages/admin/admin_showtime_list_page.d
 import 'package:cinema_booking_system_app/pages/admin/showtime/admin_showtime_form_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_voucher_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_user_list_page.dart';
-import 'package:cinema_booking_system_app/pages/admin/admin_cinema_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/cinema/admin_cinema_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_stat_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_settings_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_category_list_page.dart';
@@ -213,7 +213,7 @@ class AppRouter {
       }
       return Scaffold(
         body: Center(
-          child: Text('Page not found: ${state.error}'),
+          child: Text('Không tìm thấy trang: ${state.error}'),
         ),
       );
     },
