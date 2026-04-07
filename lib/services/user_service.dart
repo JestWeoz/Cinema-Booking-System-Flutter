@@ -96,20 +96,17 @@ class UserService {
   }
 
   /// GET /users/staff — Lấy danh sách nhân viên (ADMIN)
-  Future<List<UserResponse>> getStaff() async {
-    final response = await _dio.get(UserPaths.staff);
-    final data = response.data;
-    if (data is List) {
-      return data
-          .map((e) => UserResponse.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    if (data is Map<String, dynamic> && data['data'] is List) {
-      return (data['data'] as List)
-          .map((e) => UserResponse.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+  Future<PaginatedResponse<UserResponse>> getStaff({
+    int page = 0,
+    int size = 10,
+    String? key,
+  }) async {
+    final response = await _dio.get(UserPaths.staff, queryParameters: {
+      'page': page,
+      'size': size,
+      if (key != null && key.isNotEmpty) 'key': key,
+    });
+    return _page(response.data);
   }
 
   /// POST /users — Tạo người dùng mới (ADMIN)

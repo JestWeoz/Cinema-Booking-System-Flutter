@@ -26,7 +26,7 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
   int _totalPages = 0;
   int _total = 0;
   String _search = '';
-  String? _roleFilter;
+  String? _roleFilter = 'CUSTOMER';
   bool? _statusFilter;
 
   String _roleLabel(String role) {
@@ -35,7 +35,7 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
         return 'Quản trị viên';
       case 'STAFF':
         return 'Nhân viên';
-      case 'USER':
+      case 'CUSTOMER':
         return 'Người dùng';
       default:
         return role;
@@ -45,6 +45,9 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.staffOnly) {
+      _roleFilter = 'STAFF';
+    }
     _load();
   }
 
@@ -60,13 +63,18 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
       _error = null;
     });
     try {
-      if (widget.staffOnly) {
-        final users = await _userService.getStaff();
+      final shouldLoadStaff = widget.staffOnly || _roleFilter == 'STAFF';
+      if (shouldLoadStaff) {
+        final result = await _userService.getStaff(
+          page: _page - 1,
+          size: 10,
+          key: _search.isEmpty ? null : _search,
+        );
         if (!mounted) return;
         setState(() {
-          _users = _applyFilters(users);
-          _total = _users.length;
-          _totalPages = 1;
+          _users = _applyFilters(result.content);
+          _total = result.totalElements;
+          _totalPages = result.totalPages;
           _loading = false;
         });
       } else {
@@ -124,6 +132,123 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
     }
   }
 
+  Future<void> _showCreateStaffDialog() async {
+    final usernameController = TextEditingController();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            backgroundColor: AppColors.surfaceDark,
+            title: const Text('Thêm nhân viên', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: usernameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Username'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  style: const TextStyle(color: Colors.white),
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Mật khẩu'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Huỷ'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final username = usernameController.text.trim();
+                  final email = emailController.text.trim();
+                  final password = passwordController.text;
+
+                  if (username.isEmpty || email.isEmpty || password.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Vui lòng nhập đầy đủ thông tin'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (!email.contains('@')) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Email không hợp lệ'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (password.length < 8) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Mật khẩu phải từ 8 ký tự'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+
+                  try {
+                    await _userService.create({
+                      'username': username,
+                      'email': email,
+                      'password': password,
+                      'roles': ['STAFF'],
+                    });
+                    if (!mounted) return;
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Tạo nhân viên thành công'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                    setState(() => _page = 1);
+                    _load();
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Không tạo được nhân viên: $e'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Tạo'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      usernameController.dispose();
+      emailController.dispose();
+      passwordController.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,6 +260,14 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (_roleFilter == 'STAFF')
+            IconButton(
+              tooltip: 'Thêm nhân viên',
+              onPressed: _showCreateStaffDialog,
+              icon: const Icon(Icons.person_add_alt_1_outlined, color: Colors.white),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -172,10 +305,8 @@ class _AdminUserListPageState extends State<AdminUserListPage> {
                         style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(labelText: 'Vai trò'),
                         items: const [
-                          DropdownMenuItem<String?>(value: null, child: Text('Tất cả vai trò')),
-                          DropdownMenuItem<String?>(value: 'ADMIN', child: Text('Quản trị viên')),
                           DropdownMenuItem<String?>(value: 'STAFF', child: Text('Nhân viên')),
-                          DropdownMenuItem<String?>(value: 'USER', child: Text('Người dùng')),
+                          DropdownMenuItem<String?>(value: 'CUSTOMER', child: Text('Khách hàng')),
                         ],
                         onChanged: (value) {
                           setState(() => _roleFilter = value);

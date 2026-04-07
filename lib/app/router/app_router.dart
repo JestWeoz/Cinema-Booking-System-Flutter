@@ -28,12 +28,17 @@ import 'package:cinema_booking_system_app/pages/admin/admin_category_list_page.d
 import 'package:cinema_booking_system_app/pages/admin/admin_product_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_room_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_seat_list_page.dart';
+import 'package:cinema_booking_system_app/pages/booking/booking_payment_result_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
 
 class AppRouter {
   AppRouter._();
 
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.login,
     debugLogDiagnostics: false,
     routes: [
@@ -67,6 +72,17 @@ class AppRouter {
         path: AppRoutes.settings,
         name: 'settings',
         builder: (_, __) => const UserSettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentResult,
+        name: 'paymentResult',
+        builder: (_, state) => BookingPaymentResultPage(
+          bookingId: state.uri.queryParameters['bookingId'] ?? '',
+          bookingCode: state.uri.queryParameters['bookingCode'],
+          rawStatus: state.uri.queryParameters['status'],
+          responseCode: state.uri.queryParameters['responseCode'],
+          transactionId: state.uri.queryParameters['transactionId'],
+        ),
       ),
 
       // ─── Admin (no bottom nav shell) ─────────────────────────────────────

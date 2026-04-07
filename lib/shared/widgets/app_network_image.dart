@@ -31,9 +31,23 @@ class AppNetworkImage extends StatelessWidget {
     return lower.endsWith('.svg') || lower.contains('.svg?');
   }
 
+  int? _cacheDimension(BuildContext context, double? logicalSize) {
+    if (logicalSize == null || logicalSize <= 0) {
+      return null;
+    }
+
+    final devicePixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1;
+    final pixels = (logicalSize * devicePixelRatio).round();
+    if (pixels < 64) return 64;
+    if (pixels > 2048) return 2048;
+    return pixels;
+  }
+
   @override
   Widget build(BuildContext context) {
     final resolvedUrl = ImageUrlResolver.normalize(url);
+    final cacheWidth = _cacheDimension(context, width);
+    final cacheHeight = _cacheDimension(context, height);
     final image = resolvedUrl == null || resolvedUrl.isEmpty
         ? _fallback()
         : _isSvg(resolvedUrl)
@@ -54,6 +68,13 @@ class AppNetworkImage extends StatelessWidget {
                 width: width,
                 height: height,
                 fit: fit,
+                memCacheWidth: cacheWidth,
+                memCacheHeight: cacheHeight,
+                maxWidthDiskCache: cacheWidth,
+                maxHeightDiskCache: cacheHeight,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                filterQuality: FilterQuality.low,
                 placeholder: (_, __) => AppShimmer(
                   width: width ?? double.infinity,
                   height: height ?? 200,

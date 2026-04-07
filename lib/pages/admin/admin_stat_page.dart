@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
+import 'package:cinema_booking_system_app/models/responses/misc_responses.dart';
+import 'package:cinema_booking_system_app/services/cinema_service.dart';
 import 'package:cinema_booking_system_app/services/dashboard_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/admin/app_table.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_shimmer.dart';
@@ -15,6 +17,7 @@ class AdminStatPage extends StatefulWidget {
 
 class _AdminStatPageState extends State<AdminStatPage> {
   final DashboardService _service = DashboardService.instance;
+  final CinemaService _cinemaService = CinemaService.instance;
   final NumberFormat _money = NumberFormat.currency(
     locale: 'vi_VN',
     symbol: '₫',
@@ -29,11 +32,52 @@ class _AdminStatPageState extends State<AdminStatPage> {
   List<RevenueChartPoint> _revenue = const [];
   List<TicketChartPoint> _tickets = const [];
   List<TopMovieResponse> _topMovies = const [];
+  List<CinemaResponse> _cinemas = const [];
+  String? _cinemaId;
 
   @override
   void initState() {
     super.initState();
+    _applyDefaultRange();
+    _loadCinemas();
     _load();
+  }
+
+  void _applyDefaultRange() {
+    final now = DateTime.now();
+    _range = DateTimeRange(
+      start: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6)),
+      end: DateTime(now.year, now.month, now.day),
+    );
+  }
+
+  bool _isDefaultRange() {
+    if (_range == null) {
+      return false;
+    }
+    final now = DateTime.now();
+    final defaultStart = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    final defaultEnd = DateTime(now.year, now.month, now.day);
+    return _range!.start.year == defaultStart.year &&
+        _range!.start.month == defaultStart.month &&
+        _range!.start.day == defaultStart.day &&
+        _range!.end.year == defaultEnd.year &&
+        _range!.end.month == defaultEnd.month &&
+        _range!.end.day == defaultEnd.day;
+  }
+
+  Future<void> _loadCinemas() async {
+    try {
+      final cinemas = await _cinemaService.getAll();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _cinemas = cinemas;
+      });
+    } catch (_) {
+      // Keep "all cinemas" option available even if cinema list fails to load.
+    }
   }
 
   Future<void> _pickRange() async {
@@ -57,21 +101,30 @@ class _AdminStatPageState extends State<AdminStatPage> {
       _error = null;
     });
     try {
-      final startDate = _range == null ? null : _isoDate(_range!.start);
-      final endDate = _range == null ? null : _isoDate(_range!.end);
+      final from = _range == null ? '2000-01-01' : _isoDate(_range!.start);
+      final to = _range == null ? _isoDate(DateTime.now()) : _isoDate(_range!.end);
       final results = await Future.wait<dynamic>([
-        _service.getStatisticsSummary(startDate: startDate, endDate: endDate),
+        _service.getStatisticsSummary(
+          from: from,
+          to: to,
+          cinemaId: _cinemaId,
+        ),
         _service.getStatisticsRevenueChart(
-          startDate: startDate,
-          endDate: endDate,
-          groupBy: 'DAY',
+          from: from,
+          to: to,
+          cinemaId: _cinemaId,
         ),
         _service.getTicketChart(
-          startDate: startDate,
-          endDate: endDate,
-          groupBy: 'DAY',
+          from: from,
+          to: to,
+          cinemaId: _cinemaId,
         ),
-        _service.getTopMovies(startDate: startDate, endDate: endDate, limit: 10),
+        _service.getTopMovies(
+          from: from,
+          to: to,
+          cinemaId: _cinemaId,
+          limit: 10,
+        ),
       ]);
       if (!mounted) {
         return;
@@ -131,12 +184,16 @@ class _AdminStatPageState extends State<AdminStatPage> {
           children: [
             _HeaderCard(
               label: _formatRange(),
-              onClearRange: _range == null
-                  ? null
-                  : () async {
-                      setState(() => _range = null);
-                      await _load();
-                    },
+              cinemaLabel: _selectedCinemaLabel(),
+            ),
+            const SizedBox(height: 16),
+            _CinemaFilterCard(
+              cinemas: _cinemas,
+              selectedCinemaId: _cinemaId,
+              onChanged: (value) async {
+                setState(() => _cinemaId = value);
+                await _load();
+              },
             ),
             const SizedBox(height: 16),
             if (_loading) ..._buildLoading()
@@ -152,13 +209,20 @@ class _AdminStatPageState extends State<AdminStatPage> {
               _ChartCard(
                 title: 'Doanh thu',
                 subtitle: 'Biểu đồ doanh thu theo ngày',
-                child: _RevenueChart(points: _revenue, money: _money),
+                child: _RevenueChart(
+                  points: _revenue,
+                  money: _money,
+                  useCompactDateFormat: _useCompactAxisDateFormat(),
+                ),
               ),
               const SizedBox(height: 16),
               _ChartCard(
                 title: 'Vé bán ra',
                 subtitle: 'Sản lượng vé theo ngày',
-                child: _TicketChart(points: _tickets),
+                child: _TicketChart(
+                  points: _tickets,
+                  useCompactDateFormat: _useCompactAxisDateFormat(),
+                ),
               ),
               const SizedBox(height: 16),
               _TopMoviesCard(
@@ -193,15 +257,35 @@ class _AdminStatPageState extends State<AdminStatPage> {
       const AppShimmer(width: double.infinity, height: 320, borderRadius: 18),
     ];
   }
+
+  String _selectedCinemaLabel() {
+    if (_cinemaId == null || _cinemaId!.isEmpty) {
+      return 'Toàn bộ rạp';
+    }
+    for (final cinema in _cinemas) {
+      if (cinema.id == _cinemaId) {
+        return cinema.name;
+      }
+    }
+    return 'Toàn bộ rạp';
+  }
+
+  bool _useCompactAxisDateFormat() {
+    if (_range == null) {
+      return true;
+    }
+    final days = _range!.end.difference(_range!.start).inDays + 1;
+    return days > 30;
+  }
 }
 
 class _HeaderCard extends StatelessWidget {
   final String label;
-  final VoidCallback? onClearRange;
+  final String cinemaLabel;
 
   const _HeaderCard({
     required this.label,
-    required this.onClearRange,
+    required this.cinemaLabel,
   });
 
   @override
@@ -217,45 +301,100 @@ class _HeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.insights_outlined, color: AppColors.primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Báo cáo quản trị',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: const TextStyle(color: Colors.white70),
+                child: const Icon(Icons.insights_outlined, color: AppColors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Báo cáo quản trị',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      cinemaLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (onClearRange != null)
-            TextButton.icon(
-              onPressed: onClearRange,
-              icon: const Icon(Icons.close, size: 16),
-              label: const Text('Bỏ lọc'),
-            ),
         ],
+      ),
+    );
+  }
+}
+
+class _CinemaFilterCard extends StatelessWidget {
+  final List<CinemaResponse> cinemas;
+  final String? selectedCinemaId;
+  final ValueChanged<String?> onChanged;
+
+  const _CinemaFilterCard({
+    required this.cinemas,
+    required this.selectedCinemaId,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: DropdownButtonFormField<String?>(
+        initialValue: selectedCinemaId,
+        isExpanded: true,
+        dropdownColor: AppColors.surfaceDark,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: 'Rạp',
+          prefixIcon: Icon(Icons.location_city_outlined),
+        ),
+        items: [
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('Toàn bộ rạp', overflow: TextOverflow.ellipsis),
+          ),
+          ...cinemas.map(
+            (cinema) => DropdownMenuItem<String?>(
+              value: cinema.id,
+              child: Text(cinema.name, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+        ],
+        onChanged: onChanged,
       ),
     );
   }
@@ -427,10 +566,12 @@ class _ChartCard extends StatelessWidget {
 class _RevenueChart extends StatelessWidget {
   final List<RevenueChartPoint> points;
   final NumberFormat money;
+  final bool useCompactDateFormat;
 
   const _RevenueChart({
     required this.points,
     required this.money,
+    required this.useCompactDateFormat,
   });
 
   @override
@@ -447,6 +588,7 @@ class _RevenueChart extends StatelessWidget {
     final maxRevenue = points
         .map((point) => point.revenue)
         .fold<double>(0, (current, next) => next > current ? next : current);
+    final labelStep = _xAxisLabelStep(points.length);
 
     return LineChart(
       LineChartData(
@@ -480,17 +622,27 @@ class _RevenueChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 30,
+              interval: labelStep.toDouble(),
+              reservedSize: 32,
               getTitlesWidget: (value, _) {
+                if ((value - value.roundToDouble()).abs() > 0.001) {
+                  return const SizedBox.shrink();
+                }
                 final index = value.toInt();
                 if (index < 0 || index >= points.length) {
                   return const SizedBox.shrink();
                 }
+                if (index % labelStep != 0 && index != points.length - 1) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    _formatAxisDate(points[index].date),
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    _formatAxisDate(
+                      points[index].date,
+                      compact: useCompactDateFormat,
+                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                 );
               },
@@ -545,8 +697,12 @@ class _RevenueChart extends StatelessWidget {
 
 class _TicketChart extends StatelessWidget {
   final List<TicketChartPoint> points;
+  final bool useCompactDateFormat;
 
-  const _TicketChart({required this.points});
+  const _TicketChart({
+    required this.points,
+    required this.useCompactDateFormat,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -557,6 +713,7 @@ class _TicketChart extends StatelessWidget {
     final maxTickets = points
         .map((point) => point.ticketCount.toDouble())
         .fold<double>(0, (current, next) => next > current ? next : current);
+    final labelStep = _xAxisLabelStep(points.length);
 
     return BarChart(
       BarChartData(
@@ -590,17 +747,27 @@ class _TicketChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 30,
+              interval: labelStep.toDouble(),
+              reservedSize: 32,
               getTitlesWidget: (value, _) {
+                if ((value - value.roundToDouble()).abs() > 0.001) {
+                  return const SizedBox.shrink();
+                }
                 final index = value.toInt();
                 if (index < 0 || index >= points.length) {
                   return const SizedBox.shrink();
                 }
+                if (index % labelStep != 0 && index != points.length - 1) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    _formatAxisDate(points[index].date),
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    _formatAxisDate(
+                      points[index].date,
+                      compact: useCompactDateFormat,
+                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                 );
               },
@@ -764,11 +931,19 @@ class _ErrorCard extends StatelessWidget {
   }
 }
 
-String _formatAxisDate(String raw) {
+String _formatAxisDate(String raw, {bool compact = false}) {
   try {
     final date = DateTime.parse(raw);
-    return DateFormat('dd/MM').format(date);
+    return DateFormat(compact ? 'MM/dd' : 'dd/MM').format(date);
   } catch (_) {
     return raw;
   }
+}
+
+int _xAxisLabelStep(int pointCount) {
+  if (pointCount <= 1) {
+    return 1;
+  }
+  const maxLabels = 6;
+  return ((pointCount - 1) / (maxLabels - 1)).ceil();
 }

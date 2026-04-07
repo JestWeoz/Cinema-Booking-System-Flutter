@@ -1,11 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
-import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
+import 'package:cinema_booking_system_app/pages/booking/booking_flow_models.dart';
+import 'package:cinema_booking_system_app/pages/booking/booking_showtime_page.dart';
 import 'package:cinema_booking_system_app/pages/trailer_player_page.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
@@ -231,11 +230,29 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     );
   }
 
+  Future<void> _openBookingFlow(MovieResponse movie) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BookingShowtimePage(
+          movie: BookingMovieSnapshot(
+            movieId: movie.id,
+            title: movie.title,
+            posterUrl: movie.posterUrl,
+            ageRating: movie.ageRating,
+            durationMinutes: movie.duration,
+          ),
+        ),
+      ),
+    );
+  }
+
   List<_RatingBand> _ratingBands() {
     final reviews = _reviews;
     final total = math.max(reviews.length, 1);
     int countInRange(int min, int max) {
-      return reviews.where((review) => review.rating >= min && review.rating <= max).length;
+      return reviews
+          .where((review) => review.rating >= min && review.rating <= max)
+          .length;
     }
 
     return [
@@ -274,9 +291,12 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : _error != null || movie == null
-              ? _ErrorState(message: _error ?? 'Không tải được thông tin phim', onRetry: _loadMovie)
+              ? _ErrorState(
+                  message: _error ?? 'Không tải được thông tin phim',
+                  onRetry: _loadMovie)
               : RefreshIndicator(
                   onRefresh: _loadMovie,
                   color: AppColors.primary,
@@ -294,7 +314,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         const SizedBox(height: 22),
                         _buildCastSection(),
                       ],
-                      if (_images.isNotEmpty || (movie.trailerUrl?.isNotEmpty ?? false)) ...[
+                      if (_images.isNotEmpty ||
+                          (movie.trailerUrl?.isNotEmpty ?? false)) ...[
                         const SizedBox(height: 22),
                         _buildMediaSection(movie),
                       ],
@@ -309,12 +330,13 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 child: SizedBox(
                   height: 54,
-                    child: ElevatedButton(
-                      onPressed: () => context.push(AppRoutes.seatSelection),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  child: ElevatedButton(
+                    onPressed: () => _openBookingFlow(movie),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18)),
                     ),
                     child: Text(
                       'Mua vé',
@@ -402,7 +424,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       const SizedBox(height: 12),
                       Text(
                         movie.categories.map((item) => item.name).join(' • '),
-                        style: const TextStyle(color: Colors.white70, fontSize: 15),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 15),
                       ),
                     ],
                     const SizedBox(height: 14),
@@ -422,11 +445,17 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                           children: [
                             Expanded(
                               child: _HeaderActionButton(
-                                label: compact ? 'Thích' : (_liked ? 'Đã thích' : 'Yêu thích'),
-                                icon: _liked ? Icons.favorite : Icons.favorite_border,
-                                onPressed: () => setState(() => _liked = !_liked),
+                                label: compact
+                                    ? 'Thích'
+                                    : (_liked ? 'Đã thích' : 'Yêu thích'),
+                                icon: _liked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                onPressed: () =>
+                                    setState(() => _liked = !_liked),
                                 foregroundColor: Colors.white,
-                                borderColor: Colors.white.withValues(alpha: 0.16),
+                                borderColor:
+                                    Colors.white.withValues(alpha: 0.16),
                                 compact: compact,
                               ),
                             ),
@@ -435,9 +464,13 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                               child: _HeaderActionButton(
                                 label: 'Trailer',
                                 icon: Icons.play_circle_outline,
-                                onPressed: (movie.trailerUrl?.isNotEmpty ?? false) ? _openTrailer : null,
+                                onPressed:
+                                    (movie.trailerUrl?.isNotEmpty ?? false)
+                                        ? _openTrailer
+                                        : null,
                                 foregroundColor: AppColors.secondary,
-                                borderColor: AppColors.secondary.withValues(alpha: 0.5),
+                                borderColor:
+                                    AppColors.secondary.withValues(alpha: 0.5),
                                 compact: compact,
                               ),
                             ),
@@ -503,7 +536,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
+            border:
+                Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
           ),
           child: Row(
             children: [
@@ -514,7 +548,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                   color: AppColors.secondary.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.workspace_premium_outlined, color: AppColors.secondary),
+                child: const Icon(Icons.workspace_premium_outlined,
+                    color: AppColors.secondary),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -534,7 +569,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       reviewCount > 0
                           ? '$reviewCount đánh giá từ khán giả đã xem phim'
                           : 'Chưa có đủ dữ liệu đánh giá từ khán giả',
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
@@ -555,7 +591,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               Expanded(
                 child: Column(
                   children: [
-                    const Icon(Icons.star_rounded, color: AppColors.secondary, size: 42),
+                    const Icon(Icons.star_rounded,
+                        color: AppColors.secondary, size: 42),
                     const SizedBox(height: 6),
                     RichText(
                       text: TextSpan(
@@ -581,8 +618,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      reviewCount > 0 ? '($reviewCount đánh giá)' : 'Chưa có đánh giá',
-                      style: const TextStyle(color: Colors.white70, fontSize: 16),
+                      reviewCount > 0
+                          ? '($reviewCount đánh giá)'
+                          : 'Chưa có đánh giá',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 16),
                     ),
                   ],
                 ),
@@ -605,10 +645,12 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                                 width: 34,
                                 child: Text(
                                   band.label,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14),
                                 ),
                               ),
-                              const Icon(Icons.star_border_rounded, color: Colors.white24, size: 16),
+                              const Icon(Icons.star_border_rounded,
+                                  color: Colors.white24, size: 16),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: ClipRRect(
@@ -616,8 +658,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                                   child: LinearProgressIndicator(
                                     minHeight: 9,
                                     value: band.count,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.08),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            AppColors.secondary),
                                   ),
                                 ),
                               ),
@@ -649,12 +694,14 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         children: [
           Text(
             overview.isEmpty ? 'Chưa có mô tả cho phim này.' : displayed,
-            style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.7),
+            style: const TextStyle(
+                color: Colors.white70, fontSize: 16, height: 1.7),
           ),
           if (isLong) ...[
             const SizedBox(height: 10),
             TextButton(
-              onPressed: () => setState(() => _expandedOverview = !_expandedOverview),
+              onPressed: () =>
+                  setState(() => _expandedOverview = !_expandedOverview),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 padding: EdgeInsets.zero,
@@ -722,7 +769,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 
   Widget _buildMediaSection(MovieResponse movie) {
-    final mediaCount = _images.length + ((movie.trailerUrl?.isNotEmpty ?? false) ? 1 : 0);
+    final mediaCount =
+        _images.length + ((movie.trailerUrl?.isNotEmpty ?? false) ? 1 : 0);
     return _SectionCard(
       title: 'Hình ảnh và video',
       child: SizedBox(
@@ -1006,7 +1054,8 @@ class _TrailerCard extends StatelessWidget {
           ),
           const Positioned.fill(
             child: Center(
-              child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 48),
+              child: Icon(Icons.play_circle_fill_rounded,
+                  color: Colors.white, size: 48),
             ),
           ),
           Positioned(
@@ -1020,7 +1069,8 @@ class _TrailerCard extends StatelessWidget {
               ),
               child: const Text(
                 'Trailer',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
               ),
             ),
           ),

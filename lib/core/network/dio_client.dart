@@ -13,11 +13,17 @@ class DioClient {
   }
 
   static Dio _createDio() {
+    if (kDebugMode) {
+      debugPrint('Dio baseUrl: ${AppConstants.baseUrl}');
+    }
+
     final dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(milliseconds: AppConstants.connectTimeout),
-        receiveTimeout: const Duration(milliseconds: AppConstants.receiveTimeout),
+        connectTimeout:
+            const Duration(milliseconds: AppConstants.connectTimeout),
+        receiveTimeout:
+            const Duration(milliseconds: AppConstants.receiveTimeout),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

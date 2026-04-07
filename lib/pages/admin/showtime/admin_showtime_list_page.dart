@@ -49,6 +49,18 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
   ShowTimeStatus? _status;
   DateTime? _date;
 
+  // Đếm số filter đang active
+  int get _activeFilterCount {
+    int count = 0;
+    if (_movieId != null) count++;
+    if (_cinemaId != null) count++;
+    if (_roomId != null) count++;
+    if (_language != null) count++;
+    if (_status != null) count++;
+    if (_date != null) count++;
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -142,22 +154,6 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-    );
-    if (picked == null) return;
-    setState(() {
-      _date = picked;
-      _page = 1;
-    });
-    _load();
-  }
-
   Future<void> _openCreatePage() async {
     final created = await context.push<bool>(AppRoutes.adminShowtimeCreate);
     if (created == true && mounted) {
@@ -233,23 +229,408 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
     return DateFormat('dd/MM/yyyy HH:mm').format(parsed);
   }
 
-  Widget _buildFilterDropdown<T>({
-    required T? value,
-    required String label,
-    required List<DropdownMenuItem<T?>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return DropdownButtonFormField<T?>(
-      initialValue: value,
-      isExpanded: true,
-      dropdownColor: AppColors.surfaceDark,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(labelText: label),
-      items: items,
-      onChanged: (newValue) {
-        onChanged(newValue);
-        setState(() => _page = 1);
-        _load();
+  /// Mở dialog bộ lọc
+  Future<void> _openFilterDialog() async {
+    // Tạo bản sao tạm thời để edit trong dialog
+    String? tmpMovieId = _movieId;
+    String? tmpCinemaId = _cinemaId;
+    String? tmpRoomId = _roomId;
+    List<RoomResponse> tmpRooms = List.from(_rooms);
+    Language? tmpLanguage = _language;
+    ShowTimeStatus? tmpStatus = _status;
+    DateTime? tmpDate = _date;
+    bool tmpLoadingRooms = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            Future<void> loadRoomsInDialog(String cinemaId) async {
+              setDialogState(() => tmpLoadingRooms = true);
+              try {
+                final rooms = await _roomService.getByCinema(cinemaId, size: 100);
+                setDialogState(() {
+                  tmpRooms = rooms;
+                  final stillExists = tmpRooms.any((r) => r.id == tmpRoomId);
+                  if (!stillExists) tmpRoomId = null;
+                  tmpLoadingRooms = false;
+                });
+              } catch (_) {
+                setDialogState(() {
+                  tmpRooms = const [];
+                  tmpRoomId = null;
+                  tmpLoadingRooms = false;
+                });
+              }
+            }
+
+            Future<void> pickDateInDialog() async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: ctx,
+                initialDate: tmpDate ?? now,
+                firstDate: DateTime(now.year - 1),
+                lastDate: DateTime(now.year + 2),
+              );
+              if (picked != null) {
+                setDialogState(() => tmpDate = picked);
+              }
+            }
+
+            Widget buildDropdown<T>({
+              required String label,
+              required T? value,
+              required List<DropdownMenuItem<T?>> items,
+              required ValueChanged<T?> onChanged,
+            }) {
+              return DropdownButtonFormField<T?>(
+                initialValue: value,
+                isExpanded: true,
+                dropdownColor: AppColors.surfaceDark,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: label,
+                  labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  filled: true,
+                  fillColor: AppColors.cardDark,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                ),
+                items: items,
+                onChanged: onChanged,
+              );
+            }
+
+            return Dialog(
+              backgroundColor: AppColors.surfaceDark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 40,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.filter_list_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Bo loc suat chieu',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white54),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: Colors.white12, height: 1),
+                  // Scrollable filter content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Phim
+                          buildDropdown<String>(
+                            label: 'Phim',
+                            value: tmpMovieId,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  'Tat ca phim',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              ..._movies.map(
+                                (movie) => DropdownMenuItem<String?>(
+                                  value: movie.id,
+                                  child: Text(
+                                    movie.title,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) =>
+                                setDialogState(() => tmpMovieId = v),
+                          ),
+                          const SizedBox(height: 12),
+                          // Rạp
+                          buildDropdown<String>(
+                            label: 'Rap',
+                            value: tmpCinemaId,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  'Tat ca rap',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              ..._cinemas.map(
+                                (cinema) => DropdownMenuItem<String?>(
+                                  value: cinema.id,
+                                  child: Text(
+                                    cinema.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              setDialogState(() {
+                                tmpCinemaId = v;
+                                tmpRooms = const [];
+                                tmpRoomId = null;
+                              });
+                              if (v != null && v.isNotEmpty) {
+                                loadRoomsInDialog(v);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          // Phòng
+                          if (tmpLoadingRooms)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            buildDropdown<String>(
+                              label: 'Phong',
+                              value: tmpRoomId,
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(
+                                    'Tat ca phong',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                ...tmpRooms.map(
+                                  (room) => DropdownMenuItem<String?>(
+                                    value: room.id,
+                                    child: Text(
+                                      room.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (v) =>
+                                  setDialogState(() => tmpRoomId = v),
+                            ),
+                          const SizedBox(height: 12),
+                          // Ngôn ngữ
+                          buildDropdown<Language>(
+                            label: 'Ngon ngu',
+                            value: tmpLanguage,
+                            items: [
+                              const DropdownMenuItem<Language?>(
+                                value: null,
+                                child: Text('Tat ca'),
+                              ),
+                              ...Language.values.map(
+                                (language) => DropdownMenuItem<Language?>(
+                                  value: language,
+                                  child: Text(languageLabel(language)),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) =>
+                                setDialogState(() => tmpLanguage = v),
+                          ),
+                          const SizedBox(height: 12),
+                          // Trạng thái
+                          buildDropdown<ShowTimeStatus>(
+                            label: 'Trang thai',
+                            value: tmpStatus,
+                            items: [
+                              const DropdownMenuItem<ShowTimeStatus?>(
+                                value: null,
+                                child: Text('Tat ca'),
+                              ),
+                              ...ShowTimeStatus.values.map(
+                                (status) => DropdownMenuItem<ShowTimeStatus?>(
+                                  value: status,
+                                  child: Text(showTimeStatusLabel(status)),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) =>
+                                setDialogState(() => tmpStatus = v),
+                          ),
+                          const SizedBox(height: 12),
+                          // Ngày chiếu
+                          InkWell(
+                            onTap: pickDateInDialog,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardDark,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 18,
+                                    color: Colors.white54,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Ngay chieu',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        Text(
+                                          tmpDate == null
+                                              ? 'Chon ngay de loc'
+                                              : DateFormat('dd/MM/yyyy')
+                                                  .format(tmpDate!),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (tmpDate != null)
+                                    GestureDetector(
+                                      onTap: () =>
+                                          setDialogState(() => tmpDate = null),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Colors.white54,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Footer buttons
+                  const Divider(color: Colors.white12, height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        // Reset
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            setState(() {
+                              _movieId = null;
+                              _cinemaId = null;
+                              _roomId = null;
+                              _rooms = const [];
+                              _language = null;
+                              _status = null;
+                              _date = null;
+                              _page = 1;
+                            });
+                            _load();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white54,
+                            side: const BorderSide(color: Colors.white24),
+                          ),
+                          child: const Text('Xoa loc'),
+                        ),
+                        const SizedBox(width: 12),
+                        // Apply
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              setState(() {
+                                _movieId = tmpMovieId;
+                                _cinemaId = tmpCinemaId;
+                                _roomId = tmpRoomId;
+                                _rooms = tmpRooms;
+                                _language = tmpLanguage;
+                                _status = tmpStatus;
+                                _date = tmpDate;
+                                _page = 1;
+                              });
+                              _load();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Ap dung'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -279,201 +660,205 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
       ),
       body: Column(
         children: [
+          // Search bar + Filter button
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: Row(
               children: [
-                TextField(
-                  controller: _keywordController,
-                  onSubmitted: (value) {
-                    setState(() {
-                      _keyword = value.trim().isEmpty ? null : value.trim();
-                      _page = 1;
-                    });
-                    _load();
-                  },
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Tim theo ten phim, rap, phong...',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                    suffixIcon: _keywordController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: () {
-                              _keywordController.clear();
-                              setState(() {
-                                _keyword = null;
-                                _page = 1;
-                              });
-                              _load();
-                            },
-                            icon: const Icon(Icons.close, color: Colors.white54),
-                          ),
-                    filled: true,
-                    fillColor: AppColors.cardDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final useTwoColumns = constraints.maxWidth >= 640;
-                    final children = <Widget>[
-                      _buildFilterDropdown<String>(
-                        value: _movieId,
-                        label: 'Phim',
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('Tat ca phim', overflow: TextOverflow.ellipsis),
-                          ),
-                          ..._movies.map(
-                            (movie) => DropdownMenuItem<String?>(
-                              value: movie.id,
-                              child: Text(movie.title, overflow: TextOverflow.ellipsis),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => _movieId = value,
-                      ),
-                      _buildFilterDropdown<String>(
-                        value: _cinemaId,
-                        label: 'Rap',
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('Tat ca rap', overflow: TextOverflow.ellipsis),
-                          ),
-                          ..._cinemas.map(
-                            (cinema) => DropdownMenuItem<String?>(
-                              value: cinema.id,
-                              child: Text(cinema.name, overflow: TextOverflow.ellipsis),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          _cinemaId = value;
-                          _rooms = const [];
-                          _roomId = null;
-                          if (value != null && value.isNotEmpty) {
-                            _loadRooms(value);
-                          }
-                        },
-                      ),
-                      _buildFilterDropdown<String>(
-                        value: _roomId,
-                        label: 'Phong',
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('Tat ca phong', overflow: TextOverflow.ellipsis),
-                          ),
-                          ..._rooms.map(
-                            (room) => DropdownMenuItem<String?>(
-                              value: room.id,
-                              child: Text(room.name, overflow: TextOverflow.ellipsis),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => _roomId = value,
-                      ),
-                      _buildFilterDropdown<Language>(
-                        value: _language,
-                        label: 'Ngon ngu',
-                        items: [
-                          const DropdownMenuItem<Language?>(
-                            value: null,
-                            child: Text('Tat ca', overflow: TextOverflow.ellipsis),
-                          ),
-                          ...Language.values.map(
-                            (language) => DropdownMenuItem<Language?>(
-                              value: language,
-                              child: Text(languageLabel(language)),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => _language = value,
-                      ),
-                      _buildFilterDropdown<ShowTimeStatus>(
-                        value: _status,
-                        label: 'Trang thai',
-                        items: [
-                          const DropdownMenuItem<ShowTimeStatus?>(
-                            value: null,
-                            child: Text('Tat ca', overflow: TextOverflow.ellipsis),
-                          ),
-                          ...ShowTimeStatus.values.map(
-                            (status) => DropdownMenuItem<ShowTimeStatus?>(
-                              value: status,
-                              child: Text(showTimeStatusLabel(status)),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => _status = value,
-                      ),
-                    ];
-
-                    if (!useTwoColumns) {
-                      return Column(
-                        children: [
-                          for (int index = 0; index < children.length; index++) ...[
-                            children[index],
-                            if (index != children.length - 1) const SizedBox(height: 12),
-                          ],
-                        ],
-                      );
-                    }
-
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: children
-                          .map(
-                            (child) => SizedBox(
-                              width: (constraints.maxWidth - 12) / 2,
-                              child: child,
-                            ),
-                          )
-                          .toList(),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: _pickDate,
-                  child: InputDecorator(
+                Expanded(
+                  child: TextField(
+                    controller: _keywordController,
+                    onSubmitted: (value) {
+                      setState(() {
+                        _keyword = value.trim().isEmpty ? null : value.trim();
+                        _page = 1;
+                      });
+                      _load();
+                    },
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      labelText: 'Ngay chieu',
-                      suffixIcon: _date == null
-                          ? const Icon(Icons.calendar_today_outlined)
+                      hintText: 'Tim theo ten phim, rap, phong...',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.white54),
+                      suffixIcon: _keywordController.text.isEmpty
+                          ? null
                           : IconButton(
                               onPressed: () {
+                                _keywordController.clear();
                                 setState(() {
-                                  _date = null;
+                                  _keyword = null;
                                   _page = 1;
                                 });
                                 _load();
                               },
-                              icon: const Icon(Icons.close),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
+                              ),
                             ),
-                    ),
-                    child: Text(
-                      _date == null
-                          ? 'Chon ngay de loc'
-                          : DateFormat('dd/MM/yyyy').format(_date!),
-                      style: const TextStyle(color: Colors.white),
+                      filled: true,
+                      fillColor: AppColors.cardDark,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                // Filter button with badge
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _activeFilterCount > 0
+                            ? AppColors.primary.withValues(alpha: 0.15)
+                            : AppColors.cardDark,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _activeFilterCount > 0
+                              ? AppColors.primary.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: IconButton(
+                        onPressed: _openFilterDialog,
+                        icon: Icon(
+                          Icons.filter_list_rounded,
+                          color: _activeFilterCount > 0
+                              ? AppColors.primary
+                              : Colors.white54,
+                        ),
+                        tooltip: 'Bo loc',
+                      ),
+                    ),
+                    if (_activeFilterCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$_activeFilterCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
+          // Active filter chips
+          if (_activeFilterCount > 0)
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  if (_movieId != null)
+                    _filterChip(
+                      label: _movies
+                              .where((m) => m.id == _movieId)
+                              .firstOrNull
+                              ?.title ??
+                          'Phim',
+                      onRemove: () {
+                        setState(() {
+                          _movieId = null;
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                  if (_cinemaId != null)
+                    _filterChip(
+                      label: _cinemas
+                              .where((c) => c.id == _cinemaId)
+                              .firstOrNull
+                              ?.name ??
+                          'Rap',
+                      onRemove: () {
+                        setState(() {
+                          _cinemaId = null;
+                          _roomId = null;
+                          _rooms = const [];
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                  if (_roomId != null)
+                    _filterChip(
+                      label: _rooms
+                              .where((r) => r.id == _roomId)
+                              .firstOrNull
+                              ?.name ??
+                          'Phong',
+                      onRemove: () {
+                        setState(() {
+                          _roomId = null;
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                  if (_language != null)
+                    _filterChip(
+                      label: languageLabel(_language!),
+                      onRemove: () {
+                        setState(() {
+                          _language = null;
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                  if (_status != null)
+                    _filterChip(
+                      label: showTimeStatusLabel(_status!),
+                      onRemove: () {
+                        setState(() {
+                          _status = null;
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                  if (_date != null)
+                    _filterChip(
+                      label: DateFormat('dd/MM/yyyy').format(_date!),
+                      onRemove: () {
+                        setState(() {
+                          _date = null;
+                          _page = 1;
+                        });
+                        _load();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          // Count row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
                 Text(
@@ -490,7 +875,7 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Expanded(
             child: _loading
                 ? const Center(
@@ -526,31 +911,37 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                   color: AppColors.cardDark,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.08),
+                                    color:
+                                        Colors.white.withValues(alpha: 0.08),
                                   ),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(14),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                             child: AppNetworkImage(
                                               url: item.posterUrl,
                                               width: 64,
                                               height: 88,
                                               fit: BoxFit.cover,
-                                              fallbackIcon: Icons.movie_outlined,
+                                              fallbackIcon:
+                                                  Icons.movie_outlined,
                                             ),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   item.movieTitle,
@@ -570,7 +961,8 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  _formatDateTime(item.startTime),
+                                                  _formatDateTime(
+                                                      item.startTime),
                                                   style: const TextStyle(
                                                     color: Colors.white70,
                                                     fontSize: 12,
@@ -593,8 +985,10 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: statusColor.withValues(alpha: 0.14),
-                                              borderRadius: BorderRadius.circular(999),
+                                              color: statusColor
+                                                  .withValues(alpha: 0.14),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
                                             ),
                                             child: Text(
                                               showTimeStatusLabel(item.status),
@@ -637,7 +1031,9 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                             item.bookable
                                                 ? Icons.lock_open_outlined
                                                 : Icons.lock_outline,
-                                            item.bookable ? 'Bookable' : 'Locked',
+                                            item.bookable
+                                                ? 'Bookable'
+                                                : 'Locked',
                                             item.bookable
                                                 ? AppColors.success
                                                 : Colors.orangeAccent,
@@ -648,21 +1044,30 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                       Wrap(
                                         spacing: 8,
                                         runSpacing: 8,
-                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
                                         children: [
                                           OutlinedButton.icon(
-                                            onPressed: () => _openEditPage(item),
-                                            icon: const Icon(Icons.edit_outlined, size: 18),
+                                            onPressed: () =>
+                                                _openEditPage(item),
+                                            icon: const Icon(
+                                                Icons.edit_outlined,
+                                                size: 18),
                                             label: const Text('Chinh sua'),
                                           ),
-                                          if (item.status != ShowTimeStatus.CANCELLED)
+                                          if (item.status !=
+                                              ShowTimeStatus.CANCELLED)
                                             OutlinedButton.icon(
-                                              onPressed: () => _cancelShowtime(item),
-                                              icon: const Icon(Icons.cancel_outlined, size: 18),
+                                              onPressed: () =>
+                                                  _cancelShowtime(item),
+                                              icon: const Icon(
+                                                  Icons.cancel_outlined,
+                                                  size: 18),
                                               label: const Text('Huy suat'),
                                             ),
                                           IconButton(
-                                            onPressed: () => _deleteShowtime(item),
+                                            onPressed: () =>
+                                                _deleteShowtime(item),
                                             icon: const Icon(
                                               Icons.delete_outline,
                                               color: Colors.redAccent,
@@ -689,6 +1094,26 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
       ),
     );
   }
+}
+
+Widget _filterChip({required String label, required VoidCallback onRemove}) {
+  return Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: Chip(
+      label: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+        overflow: TextOverflow.ellipsis,
+      ),
+      deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white70),
+      onDeleted: onRemove,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    ),
+  );
 }
 
 Widget _pill(IconData icon, String text, Color color) {

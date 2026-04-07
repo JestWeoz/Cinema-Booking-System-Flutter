@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants/api_paths.dart';
 import '../constants/storage_keys.dart';
 
 /// Automatically attaches Bearer token + handles token refresh
@@ -9,18 +10,41 @@ class AuthInterceptor extends Interceptor {
 
   AuthInterceptor(this.dio);
 
+  bool _isAuthRequest(RequestOptions options) {
+    final path = options.path;
+    return path == AuthPaths.login ||
+        path == AuthPaths.register ||
+        path == AuthPaths.refresh ||
+        path == AuthPaths.introspect ||
+        path == AuthPaths.forgotPassword ||
+        path == AuthPaths.resetPassword ||
+        path == AuthPaths.validateResetToken ||
+        path.startsWith('/auth/');
+  }
+
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final token = await _storage.read(key: StorageKeys.accessToken);
-    if (token != null) {
+    final isAuthApi = _isAuthRequest(options);
+
+    if (isAuthApi) {
+      options.headers.remove('Authorization');
+    } else if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      options.headers.remove('Authorization');
     }
+
     handler.next(options);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
+    if (err.response?.statusCode == 401 &&
+        !_isAuthRequest(err.requestOptions)) {
       // Attempt token refresh
       try {
         final refreshed = await _refreshToken();

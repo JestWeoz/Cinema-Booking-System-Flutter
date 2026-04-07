@@ -36,7 +36,8 @@ class CreateBookingRequest {
         'seatIds': seatIds,
         'showtimeId': showtimeId,
         if (promotionCode != null) 'promotionCode': promotionCode,
-        if (products != null)
-          'products': products!.map((p) => p.toJson()).toList(),
+        'products': (products ?? const <BookingProductItem>[])
+            .map((p) => p.toJson())
+            .toList(),
       };
 }

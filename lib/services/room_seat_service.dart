@@ -217,6 +217,7 @@ class RoomService {
     String? keyword,
   }) async {
     final resolvedPage = page > 0 ? page - 1 : 0;
+    // Sử dụng endpoint đúng: /rooms/cinema/{cinemaId}
     final response = await _dio.get(
       RoomPaths.byCinema(cinemaId),
       queryParameters: {

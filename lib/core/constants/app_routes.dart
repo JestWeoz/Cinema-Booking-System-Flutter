@@ -23,6 +23,7 @@ class AppRoutes {
   static const String seatSelection = '/seat-selection';
   static const String checkout = '/checkout';
   static const String payment = '/payment';
+  static const String paymentResult = '/payment-result';
   static const String bookingSuccess = '/booking-success';
 
   // Profile & Tickets

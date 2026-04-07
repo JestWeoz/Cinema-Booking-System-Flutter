@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
 import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
 import 'package:cinema_booking_system_app/models/booking_model.dart';
+import 'package:cinema_booking_system_app/models/requests/create_booking_request.dart';
 import 'package:cinema_booking_system_app/models/responses/booking_response.dart';
 
 class BookingService {
@@ -50,23 +52,15 @@ class BookingService {
   // ─── Public API ───────────────────────────────────────────────────────────
 
   /// POST /bookings — Tạo đặt vé mới
-  /// Returns [BookingResponse] với đầy đủ thông tin (paymentUrl, tickets, v.v.)
-  Future<BookingResponse> createBookingFull({
-    required String showtimeId,
-    required List<String> seatIds,
-    required String paymentMethod,
-    String? promotionCode,
-    List<Map<String, dynamic>>? items,
-  }) async {
+  Future<BookingResponse> createBookingFull(
+    CreateBookingRequest request,
+  ) async {
+    if (kDebugMode) {
+      debugPrint('Create booking payload: ${request.toJson()}');
+    }
     final response = await _dio.post(
       BookingPaths.base,
-      data: {
-        'showtimeId': showtimeId,
-        'seatIds': seatIds,
-        'paymentMethod': paymentMethod,
-        if (promotionCode != null) 'promotionCode': promotionCode,
-        if (items != null) 'items': items,
-      },
+      data: request.toJson(),
     );
     final data = response.data;
     if (data is Map<String, dynamic> && data['data'] != null) {
@@ -76,22 +70,15 @@ class BookingService {
   }
 
   /// POST /bookings — Tạo đặt vé (legacy — trả về BookingModel)
-  Future<BookingModel> createBooking({
-    required String showtimeId,
-    required List<String> seatIds,
-    required String paymentMethod,
-    String? promotionCode,
-    List<Map<String, dynamic>>? items,
-  }) async {
+  Future<BookingModel> createBooking(
+    CreateBookingRequest request,
+  ) async {
+    if (kDebugMode) {
+      debugPrint('Create booking payload: ${request.toJson()}');
+    }
     final response = await _dio.post(
       BookingPaths.base,
-      data: {
-        'showtimeId': showtimeId,
-        'seatIds': seatIds,
-        'paymentMethod': paymentMethod,
-        if (promotionCode != null) 'promotionCode': promotionCode,
-        if (items != null) 'items': items,
-      },
+      data: request.toJson(),
     );
     return _parse(response.data);
   }

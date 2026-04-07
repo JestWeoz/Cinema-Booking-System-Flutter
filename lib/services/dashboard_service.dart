@@ -153,14 +153,18 @@ class DashboardService {
 
   /// GET /dashboard/statistics/summary — Lấy tổng quan thống kê
   Future<StatisticsSummaryResponse> getStatisticsSummary({
-    String? startDate,
-    String? endDate,
+    required String from,
+    required String to,
+    String? cinemaId,
+    String? movieId,
   }) async {
     final response = await _dio.get(
       StatisticsPaths.summary,
       queryParameters: {
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
+        'from': from,
+        'to': to,
+        if (cinemaId != null && cinemaId.isNotEmpty) 'cinemaId': cinemaId,
+        if (movieId != null && movieId.isNotEmpty) 'movieId': movieId,
       },
     );
     final data = _unwrap(response.data) as Map<String, dynamic>;
@@ -169,16 +173,16 @@ class DashboardService {
 
   /// GET /dashboard/statistics/revenue-chart — Lấy biểu đồ doanh thu
   Future<List<RevenueChartPoint>> getStatisticsRevenueChart({
-    String? startDate,
-    String? endDate,
-    String? groupBy, // DAY, WEEK, MONTH
+    required String from,
+    required String to,
+    String? cinemaId,
   }) async {
     final response = await _dio.get(
       StatisticsPaths.revenueChart,
       queryParameters: {
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
-        if (groupBy != null) 'groupBy': groupBy,
+        'from': from,
+        'to': to,
+        if (cinemaId != null && cinemaId.isNotEmpty) 'cinemaId': cinemaId,
       },
     );
     return _parseList(response.data, RevenueChartPoint.fromJson);
@@ -186,16 +190,18 @@ class DashboardService {
 
   /// GET /dashboard/statistics/ticket-chart — Lấy biểu đồ vé bán ra
   Future<List<TicketChartPoint>> getTicketChart({
-    String? startDate,
-    String? endDate,
-    String? groupBy,
+    required String from,
+    required String to,
+    String? cinemaId,
+    String? movieId,
   }) async {
     final response = await _dio.get(
       StatisticsPaths.ticketChart,
       queryParameters: {
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
-        if (groupBy != null) 'groupBy': groupBy,
+        'from': from,
+        'to': to,
+        if (cinemaId != null && cinemaId.isNotEmpty) 'cinemaId': cinemaId,
+        if (movieId != null && movieId.isNotEmpty) 'movieId': movieId,
       },
     );
     return _parseList(response.data, TicketChartPoint.fromJson);
@@ -203,15 +209,17 @@ class DashboardService {
 
   /// GET /dashboard/statistics/top-movies — Lấy top phim
   Future<List<TopMovieResponse>> getTopMovies({
-    String? startDate,
-    String? endDate,
+    required String from,
+    required String to,
+    String? cinemaId,
     int limit = 10,
   }) async {
     final response = await _dio.get(
       StatisticsPaths.topMovies,
       queryParameters: {
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
+        'from': from,
+        'to': to,
+        if (cinemaId != null && cinemaId.isNotEmpty) 'cinemaId': cinemaId,
         'limit': limit,
       },
     );
