@@ -27,11 +27,11 @@ class PeopleResponse {
 
   factory PeopleResponse.fromJson(Map<String, dynamic> json) => PeopleResponse(
         id: json['id'] ?? '',
-        fullName: json['fullName'] ?? '',
+      fullName: (json['fullName'] ?? json['name'] ?? '').toString(),
         avatarUrl: ImageUrlResolver.pick(json, keys: const ['avatarUrl']),
-        biography: json['biography'],
-        dob: json['dob'],
-        nationality: json['nationality'],
+      biography: json['biography']?.toString(),
+      dob: json['dob']?.toString(),
+      nationality: (json['nationality'] ?? json['nation'])?.toString(),
       );
 }
 
@@ -87,7 +87,7 @@ class PeopleService {
     final response = await _dio.get(PeoplePaths.base, queryParameters: {
       'page': page,
       'size': size,
-      if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+      if (keyword != null && keyword.isNotEmpty) 'key': keyword,
     });
     return _page(response.data);
   }

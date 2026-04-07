@@ -168,8 +168,6 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
       preview = AppNetworkImage(
         url: effectiveUrl,
         fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
         borderRadius: isCircle ? widget.size / 2 : 12,
         fallbackIcon: Icons.add_photo_alternate_outlined,
       );
@@ -235,25 +233,34 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
     }
 
     // Rectangle / Square
-    final fixedWidth = isSquare ? widget.size : double.infinity;
-    final fixedHeight = isSquare ? widget.size : widget.size;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.label.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              widget.label,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+    final fixedHeight = widget.size;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasBoundedWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+        final fixedWidth = isSquare
+            ? widget.size
+            : (hasBoundedWidth ? constraints.maxWidth : widget.size);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.label.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  widget.label,
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                ),
+              ),
+            SizedBox(
+              width: fixedWidth,
+              height: fixedHeight,
+              child: container,
             ),
-          ),
-        SizedBox(
-          width: fixedWidth,
-          height: fixedHeight,
-          child: container,
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 

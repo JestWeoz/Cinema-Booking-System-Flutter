@@ -26,6 +26,7 @@ import 'package:cinema_booking_system_app/pages/admin/admin_stat_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_settings_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_category_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/admin_product_list_page.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_people_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_room_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_seat_list_page.dart';
 import 'package:cinema_booking_system_app/pages/booking/booking_payment_result_page.dart';
@@ -175,6 +176,11 @@ class AppRouter {
         path: AppRoutes.adminProducts,
         name: 'adminProducts',
         builder: (_, __) => const AdminProductListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminPeople,
+        name: 'adminPeople',
+        builder: (_, __) => const AdminPeopleListPage(),
       ),
 
       // Main app shell with bottom nav
