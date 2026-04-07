@@ -1,3 +1,5 @@
+// ignore_for_file: comment_references
+
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
@@ -22,6 +24,19 @@ class ProductService {
       return (data['content'] as List)
           .map((e) => ProductResponse.fromJson(e as Map<String, dynamic>))
           .toList();
+    }
+    if (data is Map<String, dynamic> && data['data'] is Map) {
+      final d = data['data'] as Map<String, dynamic>;
+      if (d['items'] is List) {
+        return (d['items'] as List)
+            .map((e) => ProductResponse.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      if (d['content'] is List) {
+        return (d['content'] as List)
+            .map((e) => ProductResponse.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
     }
     if (data is Map<String, dynamic> && data['data'] is List) {
       return (data['data'] as List)
@@ -54,7 +69,7 @@ class ProductService {
         last: true,
       );
     }
-    return PaginatedResponse<ProductResponse>(
+    return const PaginatedResponse<ProductResponse>(
       content: [],
       totalElements: 0,
       totalPages: 0,

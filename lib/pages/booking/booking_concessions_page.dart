@@ -219,15 +219,13 @@ class _BookingConcessionsPageState extends State<BookingConcessionsPage> {
                       name: combo.name,
                       price: combo.price,
                       imageUrl: combo.image,
-                      requestItems: combo.items
-                          .map(
-                            (item) => BookingProductItem(
-                              itemId: item.productId,
-                              itemType: ItemType.PRODUCT,
-                              quantity: item.quantity,
-                            ),
-                          )
-                          .toList(),
+                      requestItems: [
+                        BookingProductItem(
+                          itemId: combo.id,
+                          itemType: ItemType.COMBO,
+                          quantity: 1,
+                        ),
+                      ],
                       delta: -1,
                     ),
                     onIncrease: () => _updateSelection(
@@ -236,15 +234,13 @@ class _BookingConcessionsPageState extends State<BookingConcessionsPage> {
                       name: combo.name,
                       price: combo.price,
                       imageUrl: combo.image,
-                      requestItems: combo.items
-                          .map(
-                            (item) => BookingProductItem(
-                              itemId: item.productId,
-                              itemType: ItemType.PRODUCT,
-                              quantity: item.quantity,
-                            ),
-                          )
-                          .toList(),
+                      requestItems: [
+                        BookingProductItem(
+                          itemId: combo.id,
+                          itemType: ItemType.COMBO,
+                          quantity: 1,
+                        ),
+                      ],
                       delta: 1,
                     ),
                   ),

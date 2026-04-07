@@ -9,17 +9,16 @@ class AdminMenuPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _MenuItem(icon: Icons.movie_outlined, label: 'Phim', route: AppRoutes.adminMovies, color: const Color(0xFFE50914)),
-      _MenuItem(icon: Icons.schedule_outlined, label: 'Suất Chiếu', route: AppRoutes.adminShowtimes, color: const Color(0xFFFF6B35)),
-      _MenuItem(icon: Icons.category_outlined, label: 'Thể Loại', route: AppRoutes.adminCategories, color: const Color(0xFF00BCD4)),
-      _MenuItem(icon: Icons.fastfood_outlined, label: 'Sản Phẩm', route: AppRoutes.adminProducts, color: const Color(0xFF8BC34A)),
-      _MenuItem(icon: Icons.theater_comedy_outlined, label: 'Người Tham Gia', route: AppRoutes.adminPeople, color: const Color(0xFFEC407A)),
-      _MenuItem(icon: Icons.local_offer_outlined, label: 'Voucher', route: AppRoutes.adminVouchers, color: const Color(0xFFFFC107)),
-      _MenuItem(icon: Icons.people_outlined, label: 'Người Dùng', route: AppRoutes.adminUsers, color: const Color(0xFF4CAF50)),
-      _MenuItem(icon: Icons.badge_outlined, label: 'Nhân Viên', route: AppRoutes.adminStaff, color: const Color(0xFF2196F3)),
-      _MenuItem(icon: Icons.theater_comedy_outlined, label: 'Rạp Chiếu', route: AppRoutes.adminCinema, color: const Color(0xFF9C27B0)),
-      _MenuItem(icon: Icons.bar_chart_rounded, label: 'Thống Kê', route: AppRoutes.adminStats, color: const Color(0xFFFF5722)),
-      _MenuItem(icon: Icons.settings_outlined, label: 'Cài Đặt', route: AppRoutes.adminSettings, color: const Color(0xFF607D8B)),
+      const _MenuItem(icon: Icons.movie_outlined, label: 'Phim', route: AppRoutes.adminMovies, color: Color(0xFFE50914)),
+      const _MenuItem(icon: Icons.schedule_outlined, label: 'Suất Chiếu', route: AppRoutes.adminShowtimes, color: Color(0xFFFF6B35)),
+      const _MenuItem(icon: Icons.category_outlined, label: 'Thể Loại', route: AppRoutes.adminCategories, color: Color(0xFF00BCD4)),
+      const _MenuItem(icon: Icons.fastfood_outlined, label: 'Sản Phẩm', route: AppRoutes.adminProducts, color: Color(0xFF8BC34A)),
+      const _MenuItem(icon: Icons.theater_comedy_outlined, label: 'Người Tham Gia', route: AppRoutes.adminPeople, color: Color(0xFFEC407A)),
+      const _MenuItem(icon: Icons.local_offer_outlined, label: 'Voucher', route: AppRoutes.adminVouchers, color: Color(0xFFFFC107)),
+      const _MenuItem(icon: Icons.people_outlined, label: 'Người Dùng', route: AppRoutes.adminUsers, color: Color(0xFF4CAF50)),
+      const _MenuItem(icon: Icons.theater_comedy_outlined, label: 'Rạp Chiếu', route: AppRoutes.adminCinema, color: Color(0xFF9C27B0)),
+      const _MenuItem(icon: Icons.bar_chart_rounded, label: 'Thống Kê', route: AppRoutes.adminStats, color: Color(0xFFFF5722)),
+      const _MenuItem(icon: Icons.settings_outlined, label: 'Cài Đặt', route: AppRoutes.adminSettings, color: Color(0xFF607D8B)),
     ];
 
     return Scaffold(

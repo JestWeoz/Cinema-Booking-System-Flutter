@@ -2,6 +2,7 @@ import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/user_model.dart';
 import 'package:cinema_booking_system_app/services/auth_service.dart';
+import 'package:cinema_booking_system_app/services/notification_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_button.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
@@ -15,14 +16,18 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final NotificationService _notificationService = NotificationService.instance;
+
   UserModel? _user;
   bool _isLoading = true;
   bool _avatarUploading = false;
+  int _unreadNotificationCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadUnreadNotificationCount();
   }
 
   Future<void> _loadUser() async {
@@ -35,6 +40,23 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+  Future<void> _loadUnreadNotificationCount() async {
+    final isLoggedIn = await AuthService.instance.isLoggedIn();
+    if (!isLoggedIn) {
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = 0);
+      return;
+    }
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = count);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = 0);
+    }
+  }
+
   Future<void> _logout() async {
     await AuthService.instance.logout();
     if (mounted) context.go(AppRoutes.login);
@@ -45,30 +67,34 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) await _loadUser();
   }
 
-  /// Quick-change avatar trực tiếp từ profile page
+  Future<void> _openNotifications() async {
+    await context.pushNamed('notifications');
+    if (!mounted) return;
+    await _loadUnreadNotificationCount();
+  }
+
   Future<void> _changeAvatarQuick() async {
     final newUser = await AuthService.instance.pickAndChangeAvatar(
-      onUploading: (v) {
-        if (mounted) setState(() => _avatarUploading = v);
+      onUploading: (value) {
+        if (mounted) setState(() => _avatarUploading = value);
       },
-      onError: (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi tải ảnh lên: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+      onError: (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loi tai anh len: $error'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       },
     );
 
     if (newUser != null && mounted) {
-      // Reload user sau khi đổi avatar
       await _loadUser();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Đổi ảnh đại diện thành công ✓'),
+          content: Text('Doi anh dai dien thanh cong'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -79,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thông tin cá nhân'),
+        title: const Text('Thong tin ca nhan'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -92,18 +118,18 @@ class _ProfilePageState extends State<ProfilePage> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // ── Avatar với quick-change tap ──────────────────────────────
                 Center(
                   child: GestureDetector(
                     onTap: _changeAvatarQuick,
                     child: Stack(
                       children: [
-                        // Avatar hiện tại
                         CircleAvatar(
                           radius: 52,
                           backgroundColor: AppColors.cardDark,
                           child: _avatarUploading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : ClipOval(
                                   child: SizedBox(
                                     width: 104,
@@ -119,7 +145,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                         ),
-                        // Badge camera
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -129,8 +154,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(
-                                  color: AppColors.primary, shape: BoxShape.circle),
-                              child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -141,18 +172,25 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 6),
                 Center(
                   child: Text(
-                    _avatarUploading ? 'Đang tải ảnh lên...' : 'Nhấn vào ảnh để thay đổi',
+                    _avatarUploading
+                        ? 'Dang tai anh len...'
+                        : 'Nhan vao anh de thay doi',
                     style: TextStyle(
                       fontSize: 11,
-                      color: _avatarUploading ? AppColors.primary : Colors.grey,
+                      color: _avatarUploading
+                          ? AppColors.primary
+                          : Colors.grey,
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    _user?.name ?? 'Khách',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    _user?.name ?? 'Khach',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Center(
@@ -162,38 +200,47 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // ── Menu items ───────────────────────────────────────────────
                 _MenuItem(
                   icon: Icons.person_outline,
-                  label: 'Chỉnh sửa thông tin',
+                  label: 'Chinh sua thong tin',
                   onTap: _openEditProfile,
                 ),
                 _MenuItem(
                   icon: Icons.lock_outline,
-                  label: 'Đổi mật khẩu',
+                  label: 'Doi mat khau',
                   onTap: () => context.pushNamed('changePassword'),
                 ),
                 _MenuItem(
                   icon: Icons.notifications_outlined,
-                  label: 'Thông báo',
-                  onTap: () => context.pushNamed('notifications'),
+                  label: 'Thong bao',
+                  badgeText: _unreadNotificationCount > 0
+                      ? (_unreadNotificationCount > 99
+                          ? '99+'
+                          : '$_unreadNotificationCount')
+                      : null,
+                  onTap: _openNotifications,
                 ),
                 _MenuItem(
                   icon: Icons.help_outline,
-                  label: 'Trợ giúp & Hỗ trợ',
+                  label: 'Tro giup & Ho tro',
                   onTap: () => _showInfo(
-                      context, 'Liên hệ hỗ trợ', 'Vui lòng liên hệ bộ phận CSKH để được hỗ trợ.'),
+                    context,
+                    'Lien he ho tro',
+                    'Vui long lien he bo phan CSKH de duoc ho tro.',
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.info_outline,
-                  label: 'Thông tin ứng dụng',
-                  onTap: () =>
-                      _showInfo(context, 'Cinema Booking', 'Ứng dụng đặt vé rạp phim.'),
+                  label: 'Thong tin ung dung',
+                  onTap: () => _showInfo(
+                    context,
+                    'Cinema Booking',
+                    'Ung dung dat ve rap phim.',
+                  ),
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: 'Đăng xuất',
+                  label: 'Dang xuat',
                   isOutlined: true,
                   onPressed: _logout,
                 ),
@@ -211,7 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => context.pop(),
-            child: const Text('Đóng'),
+            child: const Text('Dong'),
           ),
         ],
       ),
@@ -223,11 +270,13 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final String? badgeText;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.badgeText,
   });
 
   @override
@@ -236,7 +285,30 @@ class _MenuItem extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(vertical: 4),
       leading: Icon(icon),
       title: Text(label),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badgeText != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badgeText!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          const Icon(Icons.chevron_right, color: Colors.grey),
+        ],
+      ),
       onTap: onTap,
     );
   }

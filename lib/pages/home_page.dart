@@ -1,9 +1,13 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/models/movie_model.dart';
+import 'package:cinema_booking_system_app/services/auth_service.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
+import 'package:cinema_booking_system_app/services/notification_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,15 +18,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final NotificationService _notificationService = NotificationService.instance;
+  final AuthService _authService = AuthService.instance;
   List<MovieModel> _nowShowing = [];
   List<MovieModel> _comingSoon = [];
   bool _isLoading = true;
   String? _error;
+  int _unreadNotificationCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadMovies();
+    _loadUnreadNotificationCount();
   }
 
   Future<void> _loadMovies() async {
@@ -44,6 +52,29 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _loadUnreadNotificationCount() async {
+    final isLoggedIn = await _authService.isLoggedIn();
+    if (!isLoggedIn) {
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = 0);
+      return;
+    }
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = count);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = 0);
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await context.pushNamed('notifications');
+    if (!mounted) return;
+    await _loadUnreadNotificationCount();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,7 +86,7 @@ class _HomePageState extends State<HomePage> {
               floating: true,
               title: Row(
                 children: [
-                  Icon(Icons.movie, color: AppColors.primary, size: 28),
+                  const Icon(Icons.movie, color: AppColors.primary, size: 28),
                   const SizedBox(width: 8),
                   Text('CinemaBook', style: Theme.of(context).textTheme.headlineSmall),
                 ],
@@ -65,9 +96,9 @@ class _HomePageState extends State<HomePage> {
                   icon: const Icon(Icons.search),
                   onPressed: () {},
                 ),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {},
+                _NotificationBellButton(
+                  count: _unreadNotificationCount,
+                  onPressed: _openNotifications,
                 ),
               ],
             ),
@@ -107,6 +138,57 @@ class _HomePageState extends State<HomePage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationBellButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onPressed;
+
+  const _NotificationBellButton({
+    required this.count,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeText = count > 99 ? '99+' : '$count';
+    return IconButton(
+      onPressed: onPressed,
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_outlined),
+          if (count > 0)
+            Positioned(
+              right: -8,
+              top: -6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    width: 1.5,
+                  ),
+                ),
+                constraints: const BoxConstraints(minWidth: 18),
+                child: Text(
+                  badgeText,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

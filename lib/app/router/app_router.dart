@@ -125,11 +125,6 @@ class AppRouter {
         builder: (_, __) => const AdminUserListPage(),
       ),
       GoRoute(
-        path: AppRoutes.adminStaff,
-        name: 'adminStaff',
-        builder: (_, __) => const AdminUserListPage(staffOnly: true),
-      ),
-      GoRoute(
         path: AppRoutes.adminCinema,
         name: 'adminCinema',
         builder: (_, __) => const AdminCinemaListPage(),

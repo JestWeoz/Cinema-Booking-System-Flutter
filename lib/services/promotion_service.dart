@@ -39,6 +39,13 @@ class PromotionService {
     return PromotionResponse.fromJson(data as Map<String, dynamic>);
   }
 
+  Map<String, dynamic> _unwrapMap(dynamic data) {
+    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+      return data['data'] as Map<String, dynamic>;
+    }
+    return data as Map<String, dynamic>;
+  }
+
   PaginatedResponse<PromotionResponse> _page(dynamic data) {
     if (data is Map<String, dynamic> && data['data'] is Map) {
       final d = data['data'] as Map<String, dynamic>;
@@ -55,7 +62,7 @@ class PromotionService {
         last: true,
       );
     }
-    return PaginatedResponse<PromotionResponse>(
+    return const PaginatedResponse<PromotionResponse>(
       content: [],
       totalElements: 0,
       totalPages: 0,
@@ -133,5 +140,21 @@ class PromotionService {
       data: {'code': code, 'orderTotal': orderTotal},
     );
     return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> previewForUser({
+    required String code,
+    required String userId,
+    required double orderTotal,
+  }) async {
+    final response = await _dio.post(
+      PromotionPaths.preview,
+      queryParameters: {
+        'code': code,
+        'userId': userId,
+        'orderValue': orderTotal,
+      },
+    );
+    return _unwrapMap(response.data);
   }
 }

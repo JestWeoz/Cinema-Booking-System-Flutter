@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
+import 'package:cinema_booking_system_app/pages/admin/admin_movie_content_page.dart';
 import 'package:cinema_booking_system_app/services/admin_service.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
 import 'package:cinema_booking_system_app/services/category_service.dart';
@@ -195,6 +196,7 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
                           return _MovieCard(
                             movie: m,
                             statusColor: _statusColor(m.status),
+                            onOpen: () => _openMovieContentPage(m),
                             onDelete: () => _delete(m.id),
                             onStatus: () =>
                                 _changeStatus(m.id, m.status ?? MovieStatus.COMING_SOON),
@@ -311,6 +313,24 @@ class _AdminMovieListPageState extends State<AdminMovieListPage> {
       ),
       builder: (_) => _ManageMoviePeopleSheet(movie: movie, onChanged: _load),
     );
+  }
+
+  Future<void> _openMovieContentPage(
+    MovieResponse movie, {
+    int initialTabIndex = 0,
+  }) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdminMovieContentPage(
+          movie: movie,
+          initialTabIndex: initialTabIndex,
+        ),
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    _load();
   }
 }
 
@@ -1436,6 +1456,7 @@ class _ManageMoviePeopleSheetState extends State<_ManageMoviePeopleSheet> {
 class _MovieCard extends StatelessWidget {
   final MovieResponse movie;
   final Color statusColor;
+  final VoidCallback onOpen;
   final VoidCallback onDelete;
   final VoidCallback onStatus;
   final VoidCallback onEdit;
@@ -1445,6 +1466,7 @@ class _MovieCard extends StatelessWidget {
   const _MovieCard({
     required this.movie,
     required this.statusColor,
+    required this.onOpen,
     required this.onDelete,
     required this.onStatus,
     required this.onEdit,
@@ -1475,6 +1497,7 @@ class _MovieCard extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: ListTile(
+        onTap: onOpen,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),

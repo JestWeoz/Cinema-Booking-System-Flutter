@@ -1,3 +1,5 @@
+// ignore_for_file: comment_references
+
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
@@ -5,11 +7,15 @@ import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
 import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import 'package:cinema_booking_system_app/core/utils/media_upload_helper.dart';
 import 'package:cinema_booking_system_app/services/cloudinary_service.dart';
+import 'package:cinema_booking_system_app/models/enums.dart';
 import 'package:cinema_booking_system_app/models/movie_model.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
 import 'package:cinema_booking_system_app/models/responses/paginated_response.dart';
 import 'package:cinema_booking_system_app/models/requests/Movie/create_movie_request.dart';
 import 'package:cinema_booking_system_app/models/requests/Movie/update_movie_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/add_people_to_movie_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/people_role_request.dart';
+import 'package:cinema_booking_system_app/models/requests/movie/update_movie_people_request.dart';
 
 // ─── Image / People Response ───────────────────────────────────────────────
 
@@ -26,7 +32,7 @@ class MovieImageResponse {
 
   factory MovieImageResponse.fromJson(Map<String, dynamic> json) =>
       MovieImageResponse(
-        imageId: json['imageId'] ?? '',
+        imageId: (json['imageId'] ?? json['id'] ?? '').toString(),
         imageUrl: ImageUrlResolver.pick(json, keys: const ['imageUrl']) ?? '',
         isPrimary: json['isPrimary'] ?? false,
       );
@@ -49,11 +55,14 @@ class MoviePersonResponse {
 
   factory MoviePersonResponse.fromJson(Map<String, dynamic> json) =>
       MoviePersonResponse(
-        peopleId: json['peopleId'] ?? '',
-        fullName: json['fullName'] ?? '',
-        avatarUrl: ImageUrlResolver.pick(json, keys: const ['avatarUrl']),
-        role: json['role'] ?? '',
-        character: json['character'],
+        peopleId: (json['peopleId'] ?? json['id'] ?? '').toString(),
+        fullName: (json['fullName'] ?? json['peopleName'] ?? json['name'] ?? '').toString(),
+        avatarUrl: ImageUrlResolver.pick(
+          json,
+          keys: const ['avatarUrl', 'peopleAvatar'],
+        ),
+        role: (json['role'] ?? json['movieRole'] ?? '').toString(),
+        character: (json['character'] ?? json['characterName'])?.toString(),
       );
 }
 
@@ -68,7 +77,7 @@ class MovieService {
   // ─── Internal helpers ─────────────────────────────────────────────────────
 
   List<MovieModel> _parseModelList(dynamic data) {
-    List raw = _extractList(data);
+    final List raw = _extractList(data);
     return raw
         .map((e) => MovieModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -94,6 +103,20 @@ class MovieService {
     return MovieResponse.fromJson(data as Map<String, dynamic>);
   }
 
+  List<MovieImageResponse> _parseImageList(dynamic data) {
+    final raw = _extractList(data);
+    return raw
+        .map((e) => MovieImageResponse.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  List<MoviePersonResponse> _parsePeopleList(dynamic data) {
+    final raw = _extractList(data);
+    return raw
+        .map((e) => MoviePersonResponse.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   PaginatedResponse<MovieResponse> _page(dynamic data) {
     if (data is Map<String, dynamic> && data['data'] is Map) {
       final d = data['data'] as Map<String, dynamic>;
@@ -110,7 +133,7 @@ class MovieService {
         last: true,
       );
     }
-    return PaginatedResponse<MovieResponse>(
+    return const PaginatedResponse<MovieResponse>(
       content: [],
       totalElements: 0,
       totalPages: 0,
@@ -188,31 +211,61 @@ class MovieService {
   /// GET /movies/{movieId}/images — Lấy hình ảnh của phim
   Future<List<MovieImageResponse>> getImages(String movieId) async {
     final response = await _dio.get(MoviePaths.images(movieId));
-    final raw = _extractList(response.data);
-    return raw
-        .map((e) => MovieImageResponse.fromJson(e as Map<String, dynamic>))
+    return _parseImageList(response.data);
+  }
+
+  /// POST /movies/{movieId}/images — Thêm một hoặc nhiều hình ảnh cho phim
+  Future<List<MovieImageResponse>> addImages(
+    String movieId,
+    List<String> imageUrls,
+  ) async {
+    final normalized = imageUrls
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toSet()
         .toList();
+    if (normalized.isEmpty) {
+      return getImages(movieId);
+    }
+    final response = await _dio.post(
+      MoviePaths.images(movieId),
+      data: {'imageUrls': normalized},
+    );
+    return _parseImageList(response.data);
   }
 
   /// POST /movies/{movieId}/images — Thêm hình ảnh cho phim
   Future<MovieImageResponse> addImage(String movieId, Map<String, dynamic> body) async {
-    final response = await _dio.post(MoviePaths.images(movieId), data: body);
-    final data = response.data;
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      return MovieImageResponse.fromJson(data['data'] as Map<String, dynamic>);
+    final rawUrls = body['imageUrls'];
+    final imageUrls = rawUrls is List
+        ? rawUrls.map((e) => e.toString()).toList()
+        : [
+            if ((body['imageUrl'] ?? '').toString().trim().isNotEmpty)
+              body['imageUrl'].toString(),
+          ];
+    final images = await addImages(movieId, imageUrls);
+    if (images.isNotEmpty) {
+      final requested = imageUrls.toSet();
+      for (final image in images.reversed) {
+        if (requested.contains(image.imageUrl)) {
+          return image;
+        }
+      }
+      return images.last;
     }
-    return MovieImageResponse.fromJson(data as Map<String, dynamic>);
+    throw StateError('No movie image returned after upload');
   }
 
   /// PUT /movies/{movieId}/images — Cập nhật hình ảnh của phim
   Future<List<MovieImageResponse>> updateImages(
-      String movieId, List<Map<String, dynamic>> images) async {
-    final response =
-        await _dio.put(MoviePaths.images(movieId), data: {'images': images});
-    final raw = _extractList(response.data);
-    return raw
-        .map((e) => MovieImageResponse.fromJson(e as Map<String, dynamic>))
-        .toList();
+    String movieId,
+    List<String> imageUrls,
+  ) async {
+    await _dio.put(
+      MoviePaths.images(movieId),
+      data: {'imageUrls': imageUrls},
+    );
+    return getImages(movieId);
   }
 
   /// DELETE /movies/{movieId}/images/{imageId} — Xóa hình ảnh của phim
@@ -225,10 +278,19 @@ class MovieService {
   /// GET /movies/{movieId}/people — Lấy cast của phim
   Future<List<MoviePersonResponse>> getPeople(String movieId) async {
     final response = await _dio.get(MoviePaths.people(movieId));
-    final raw = _extractList(response.data);
-    return raw
-        .map((e) => MoviePersonResponse.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _parsePeopleList(response.data);
+  }
+
+  /// POST /movies/{movieId}/people — Thêm một hoặc nhiều người vào phim
+  Future<List<MoviePersonResponse>> addPeopleToMovie(
+    String movieId,
+    AddPeopleToMovieRequest request,
+  ) async {
+    final response = await _dio.post(
+      MoviePaths.people(movieId),
+      data: request.toJson(),
+    );
+    return _parsePeopleList(response.data);
   }
 
   /// POST /movies/{movieId}/people — Thêm người vào phim
@@ -237,9 +299,35 @@ class MovieService {
   }
 
   /// PUT /movies/{movieId}/people — Cập nhật thông tin người trong phim
+  Future<List<MoviePersonResponse>> replacePeople(
+    String movieId,
+    UpdateMoviePeopleRequest request,
+  ) async {
+    final response = await _dio.put(
+      MoviePaths.people(movieId),
+      data: request.toJson(),
+    );
+    return _parsePeopleList(response.data);
+  }
+
+  /// PUT /movies/{movieId}/people — Cập nhật thông tin người trong phim
   Future<void> updatePeople(
-      String movieId, List<Map<String, dynamic>> people) async {
-    await _dio.put(MoviePaths.people(movieId), data: {'people': people});
+    String movieId,
+    List<Map<String, dynamic>> people,
+  ) async {
+    await replacePeople(
+      movieId,
+      UpdateMoviePeopleRequest(
+        people: people
+            .map(
+              (item) => PeopleRoleRequest(
+                peopleId: (item['peopleId'] ?? '').toString(),
+                role: _movieRoleFromRaw(item['role'] ?? item['movieRole']),
+              ),
+            )
+            .toList(),
+      ),
+    );
   }
 
   /// DELETE /movies/{movieId}/people/{peopleId} — Xóa người khỏi phim
@@ -395,5 +483,13 @@ class MovieService {
       trailerUrl: trailerUrl,
       categoryIds: request.categoryIds,
     ));
+  }
+
+  MovieRole _movieRoleFromRaw(dynamic raw) {
+    final value = raw?.toString().trim().toUpperCase();
+    return MovieRole.values.firstWhere(
+      (role) => role.name == value,
+      orElse: () => MovieRole.ACTOR,
+    );
   }
 }

@@ -193,13 +193,21 @@ class NotificationResponse {
 
   factory NotificationResponse.fromJson(Map<String, dynamic> json) =>
       NotificationResponse(
-        notificationId: json['notificationId'] ?? '',
+        notificationId: json['notificationId'] ?? json['id'] ?? '',
         title: json['title'] ?? '',
-        body: json['body'] ?? '',
-        type: json['type'] != null
-            ? NotificationType.values.byName(json['type'])
-            : null,
+        body: json['body'] ?? json['message'] ?? '',
+        type: _notificationTypeFromJson(json['type']),
         read: json['read'] ?? false,
         createdAt: json['createdAt'],
       );
+}
+
+NotificationType? _notificationTypeFromJson(dynamic raw) {
+  final value = raw?.toString().trim().toUpperCase();
+  if (value == null || value.isEmpty) return null;
+  try {
+    return NotificationType.values.byName(value);
+  } catch (_) {
+    return null;
+  }
 }

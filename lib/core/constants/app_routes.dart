@@ -43,7 +43,6 @@ class AppRoutes {
   static const String adminShowtimeEdit = '/admin/showtimes/:id/edit';
   static const String adminVouchers = '/admin/vouchers';
   static const String adminUsers = '/admin/users';
-  static const String adminStaff = '/admin/staff';
   static const String adminCinema = '/admin/cinema';
   static const String adminRooms = '/admin/rooms';
   static const String adminSeats = '/admin/seats';

@@ -718,7 +718,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     return _SectionCard(
       title: 'Diễn viên và đoàn làm phim',
       child: SizedBox(
-        height: 174,
+        height: 198,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: _people.length,
@@ -726,7 +726,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           itemBuilder: (_, index) {
             final person = _people[index];
             return SizedBox(
-              width: 110,
+              width: 114,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -734,14 +734,14 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     borderRadius: BorderRadius.circular(18),
                     child: AppNetworkImage(
                       url: person.avatarUrl,
-                      width: 110,
-                      height: 132,
+                      width: 114,
+                      height: 128,
                       fit: BoxFit.cover,
                       fallbackIcon: Icons.person_outline,
                       backgroundColor: AppColors.cardDark,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Text(
                     person.fullName,
                     maxLines: 2,
@@ -749,15 +749,20 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
+                      height: 1.2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     _personRoleLabel(person.role),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      height: 1.2,
+                    ),
                   ),
                 ],
               ),
@@ -812,7 +817,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   void _showImagePreview(String url) {
     showDialog<void>(
       context: context,
-      builder: (_) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
         child: Stack(
@@ -830,7 +835,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               top: 12,
               right: 12,
               child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 style: IconButton.styleFrom(backgroundColor: Colors.black54),
                 icon: const Icon(Icons.close, color: Colors.white),
               ),

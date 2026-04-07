@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
 import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
 import 'package:cinema_booking_system_app/models/responses/misc_responses.dart';
@@ -9,20 +10,50 @@ class NotificationService {
 
   final Dio _dio = DioClient.instance;
 
+  NotificationResponse? _parseItem(dynamic raw) {
+    if (raw is! Map) return null;
+    try {
+      return NotificationResponse.fromJson(Map<String, dynamic>.from(raw));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Notification parse error: $e, raw=$raw');
+      }
+      return null;
+    }
+  }
+
   List<NotificationResponse> _parseList(dynamic data) {
     if (data is List) {
       return data
-          .map((e) => NotificationResponse.fromJson(e as Map<String, dynamic>))
+          .map(_parseItem)
+          .whereType<NotificationResponse>()
           .toList();
     }
     if (data is Map<String, dynamic> && data['content'] is List) {
       return (data['content'] as List)
-          .map((e) => NotificationResponse.fromJson(e as Map<String, dynamic>))
+          .map(_parseItem)
+          .whereType<NotificationResponse>()
           .toList();
+    }
+    if (data is Map<String, dynamic> && data['data'] is Map) {
+      final inner = data['data'] as Map<String, dynamic>;
+      if (inner['items'] is List) {
+        return (inner['items'] as List)
+            .map(_parseItem)
+            .whereType<NotificationResponse>()
+            .toList();
+      }
+      if (inner['content'] is List) {
+        return (inner['content'] as List)
+            .map(_parseItem)
+            .whereType<NotificationResponse>()
+            .toList();
+      }
     }
     if (data is Map<String, dynamic> && data['data'] is List) {
       return (data['data'] as List)
-          .map((e) => NotificationResponse.fromJson(e as Map<String, dynamic>))
+          .map(_parseItem)
+          .whereType<NotificationResponse>()
           .toList();
     }
     return [];
@@ -65,7 +96,9 @@ class NotificationService {
     final response = await _dio.get(NotificationPaths.unreadCount);
     final data = response.data;
     if (data is Map<String, dynamic>) {
-      return (data['data'] ?? data['count'] ?? 0) as int;
+      final raw = data['data'] ?? data['count'] ?? 0;
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
     }
     if (data is int) return data;
     return 0;
