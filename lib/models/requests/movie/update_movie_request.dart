@@ -1,5 +1,16 @@
 import 'package:cinema_booking_system_app/models/enums.dart';
 
+String _buildMovieSlug(String title) {
+  final normalized = title
+      .toLowerCase()
+      .trim()
+      .replaceAll(RegExp(r'[^\w\s-]', unicode: true), ' ')
+      .replaceAll(RegExp(r'[_\s]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  return normalized.isEmpty ? 'movie' : normalized;
+}
+
 class UpdateMovieRequest {
   final String? title;
   final String? slug;
@@ -28,7 +39,13 @@ class UpdateMovieRequest {
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     if (title != null) map['title'] = title;
-    if (slug != null) map['slug'] = slug;
+    if (title != null) {
+      map['slug'] = (slug == null || slug!.trim().isEmpty)
+          ? _buildMovieSlug(title!)
+          : slug!.trim();
+    } else if (slug != null) {
+      map['slug'] = slug!.trim();
+    }
     if (description != null) map['description'] = description;
     if (duration != null) map['duration'] = duration;
     if (releaseDate != null) {

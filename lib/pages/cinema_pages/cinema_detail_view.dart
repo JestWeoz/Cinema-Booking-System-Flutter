@@ -1,8 +1,9 @@
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/responses/showtime_response.dart';
+import 'package:cinema_booking_system_app/pages/booking/booking_flow_models.dart';
+import 'package:cinema_booking_system_app/pages/booking/booking_seat_page.dart';
 import 'package:cinema_booking_system_app/pages/cinema_pages/cinema_page_models.dart';
 import 'package:cinema_booking_system_app/pages/cinema_pages/cinema_page_utils.dart';
-import 'package:cinema_booking_system_app/pages/seat_selection_page.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ class CinemaDetailView extends StatelessWidget {
   final CinemaTimeFilter selectedFilter;
   final ValueChanged<CinemaTimeFilter> onFilterChanged;
   final List<CinemaMovieGroup> movieGroups;
+  final Map<String, int> roomTotalSeatsById;
   final Future<void> Function() onRefresh;
 
   const CinemaDetailView({
@@ -23,6 +25,7 @@ class CinemaDetailView extends StatelessWidget {
     required this.selectedFilter,
     required this.onFilterChanged,
     required this.movieGroups,
+    required this.roomTotalSeatsById,
     required this.onRefresh,
   });
 
@@ -37,7 +40,7 @@ class CinemaDetailView extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
-            itemCount: 7,
+            itemCount: 5,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
               final now = DateTime.now();
@@ -49,12 +52,10 @@ class CinemaDetailView extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   width: 92,
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : AppColors.cardDark,
+                    color: selected ? cinemaPageAccent : cinemaPageCard,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: selected
-                          ? AppColors.primary
-                          : Colors.white.withValues(alpha: 0.08),
+                      color: selected ? cinemaPageAccent : cinemaPageBorder,
                     ),
                   ),
                   child: Column(
@@ -62,17 +63,17 @@ class CinemaDetailView extends StatelessWidget {
                     children: [
                       Text(
                         DateFormat('dd/MM').format(date),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: selected ? Colors.white : cinemaPageText,
                           fontWeight: FontWeight.w800,
                           fontSize: 18,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        index == 0 ? 'Hôm nay' : weekdayLabel(date),
+                        index == 0 ? 'H.nay' : weekdayLabel(date),
                         style: TextStyle(
-                          color: selected ? Colors.white : Colors.white70,
+                          color: selected ? Colors.white : cinemaPageMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -97,20 +98,19 @@ class CinemaDetailView extends StatelessWidget {
               return GestureDetector(
                 onTap: () => onFilterChanged(filter),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : AppColors.cardDark,
+                    color: selected ? cinemaPageAccent : cinemaPageCard,
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: selected
-                          ? AppColors.primary
-                          : Colors.white.withValues(alpha: 0.08),
+                      color: selected ? cinemaPageAccent : cinemaPageBorder,
                     ),
                   ),
                   child: Text(
                     filter.label,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: selected ? Colors.white : cinemaPageText,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
@@ -120,39 +120,12 @@ class CinemaDetailView extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.18),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.local_fire_department_rounded, color: AppColors.primary),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Chọn suất chiếu phù hợp và đặt vé nhanh ngay trong hôm nay.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Padding(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
           child: Text(
-            'Danh sách phim',
+            'DANH SÁCH PHIM',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
+                  color: cinemaPageText,
                 ),
           ),
         ),
@@ -163,14 +136,16 @@ class CinemaDetailView extends StatelessWidget {
                   message: 'Hiện chưa có lịch chiếu phù hợp.',
                 )
               : RefreshIndicator(
-                  color: AppColors.primary,
+                  color: cinemaPageAccent,
                   onRefresh: onRefresh,
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     itemCount: movieGroups.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (_, index) =>
-                        _CinemaMovieCard(group: movieGroups[index]),
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (_, index) => _CinemaMovieCard(
+                      group: movieGroups[index],
+                      roomTotalSeatsById: roomTotalSeatsById,
+                    ),
                   ),
                 ),
         ),
@@ -181,8 +156,35 @@ class CinemaDetailView extends StatelessWidget {
 
 class _CinemaMovieCard extends StatelessWidget {
   final CinemaMovieGroup group;
+  final Map<String, int> roomTotalSeatsById;
 
-  const _CinemaMovieCard({required this.group});
+  const _CinemaMovieCard({
+    required this.group,
+    required this.roomTotalSeatsById,
+  });
+
+  void _openSeatSelection(
+    BuildContext context,
+    ShowtimeSummaryResponse showtime,
+  ) {
+    final movie = group.movie;
+    final draft = BookingFlowDraft(
+      movie: BookingMovieSnapshot(
+        movieId: movie?.id.isNotEmpty == true ? movie!.id : showtime.movieId,
+        title: movie?.title ?? showtime.movieTitle,
+        posterUrl: movie?.posterUrl ?? showtime.posterUrl,
+        ageRating: movie?.ageRating,
+        durationMinutes: movie?.duration ?? showtime.durationMinutes,
+      ),
+      showtime: showtime,
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BookingSeatPage(draft: draft),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -191,41 +193,33 @@ class _CinemaMovieCard extends StatelessWidget {
     final categories = movie != null && movie.categories.isNotEmpty
         ? movie.categories.map((item) => item.name).join(', ')
         : null;
-
-    final byRoom = <String, List<ShowtimeSummaryResponse>>{};
-    for (final item in group.showtimes) {
-      byRoom.putIfAbsent(item.roomName, () => []).add(item);
-    }
+    final formatLabel = '2D ${languageLabel(movie?.language, first.language)}';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        color: cinemaPageCard,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: cinemaPageBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  movie?.title ?? first.movieTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+          Text(
+            movie?.title ?? first.movieTitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: cinemaPageText,
                 ),
-              ),
-              if (movie != null)
-                TextButton(
-                  onPressed: () => context.push('/movies/${movie.id}'),
-                  child: const Text('Chi tiết'),
-                ),
-            ],
           ),
           const SizedBox(height: 6),
           Wrap(
@@ -234,9 +228,10 @@ class _CinemaMovieCard extends StatelessWidget {
             children: [
               if (movie?.ageRating != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.18),
+                    color: const Color(0x33FFC107),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
@@ -248,18 +243,20 @@ class _CinemaMovieCard extends StatelessWidget {
                   ),
                 ),
               if (categories != null && categories.isNotEmpty)
-                Text(categories, style: const TextStyle(color: Colors.white70)),
-              Text('|', style: TextStyle(color: Colors.white.withValues(alpha: 0.24))),
+                Text(
+                  categories,
+                  style: const TextStyle(color: cinemaPageMuted),
+                ),
+              if (categories != null && categories.isNotEmpty)
+                const Text('|', style: TextStyle(color: cinemaPageMuted)),
               Text(
-                movie?.language?.isNotEmpty == true
-                    ? movie!.language!
-                    : languageLabel(null, first.language),
-                style: const TextStyle(color: Colors.white70),
+                languageLabel(movie?.language, first.language),
+                style: const TextStyle(color: cinemaPageMuted),
               ),
-              Text('|', style: TextStyle(color: Colors.white.withValues(alpha: 0.24))),
+              const Text('|', style: TextStyle(color: cinemaPageMuted)),
               Text(
                 durationLabel(movie?.duration ?? first.durationMinutes),
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: cinemaPageMuted),
               ),
             ],
           ),
@@ -275,7 +272,7 @@ class _CinemaMovieCard extends StatelessWidget {
                     height: 152,
                     borderRadius: 18,
                     fit: BoxFit.cover,
-                    backgroundColor: AppColors.dividerDark,
+                    backgroundColor: cinemaPageCardAlt,
                     fallbackIcon: Icons.movie_creation_outlined,
                   ),
                   if (movie?.trailerUrl?.isNotEmpty == true) ...[
@@ -285,13 +282,16 @@ class _CinemaMovieCard extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.smart_display_outlined,
-                              color: AppColors.primary, size: 18),
+                          Icon(
+                            Icons.smart_display_outlined,
+                            color: cinemaPageAccent,
+                            size: 18,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Trailer',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: cinemaPageAccent,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -305,103 +305,96 @@ class _CinemaMovieCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: byRoom.entries.map((roomEntry) {
-                    final roomShowtimes = [...roomEntry.value]
-                      ..sort((a, b) => parseShowtimeDateTime(a.startTime)
-                          .compareTo(parseShowtimeDateTime(b.startTime)));
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            roomEntry.key,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
+                  children: [
+                    Text(
+                      formatLabel,
+                      style: const TextStyle(
+                        color: cinemaPageText,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: group.showtimes.map((showtime) {
+                        final start = parseShowtimeDateTime(showtime.startTime);
+                        final end = parseShowtimeDateTime(showtime.endTime);
+                        final totalSeats =
+                            roomTotalSeatsById[showtime.roomId] ?? 0;
+                        final seatText = totalSeats > 0
+                            ? '${showtime.availableSeats}/$totalSeats'
+                            : 'Còn ${showtime.availableSeats} ghế';
+
+                        return InkWell(
+                          onTap: showtime.bookable
+                              ? () => _openSeatSelection(context, showtime)
+                              : null,
+                          borderRadius: BorderRadius.circular(18),
+                          child: Ink(
+                            width: 132,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: roomShowtimes.map((showtime) {
-                              final start =
-                                  parseShowtimeDateTime(showtime.startTime);
-                              final end = parseShowtimeDateTime(showtime.endTime);
-                              return InkWell(
-                                onTap: showtime.bookable
-                                    ? () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const SeatSelectionPage(),
-                                          ),
-                                        );
-                                      }
-                                    : null,
-                                borderRadius: BorderRadius.circular(18),
-                                child: Ink(
-                                  width: 136,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: showtime.bookable
-                                        ? AppColors.surfaceDark
-                                        : Colors.white.withValues(alpha: 0.04),
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
-                                      color: showtime.bookable
-                                          ? Colors.white.withValues(alpha: 0.10)
-                                          : Colors.white.withValues(alpha: 0.04),
-                                    ),
-                                  ),
-                                  child: Column(
+                            decoration: BoxDecoration(
+                              color: showtime.bookable
+                                  ? cinemaPageCardAlt
+                                  : cinemaPageCard,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: showtime.bookable
+                                    ? Colors.white.withValues(alpha: 0.72)
+                                    : Colors.white.withValues(alpha: 0.26),
+                                width: showtime.bookable ? 1.2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RichText(
+                                  text: TextSpan(
                                     children: [
-                                      Text(
-                                        DateFormat('HH:mm').format(start),
+                                      TextSpan(
+                                        text: DateFormat('HH:mm').format(start),
                                         style: TextStyle(
                                           color: showtime.bookable
-                                              ? Colors.white
-                                              : Colors.white38,
+                                              ? cinemaPageText
+                                              : cinemaPageMuted,
                                           fontWeight: FontWeight.w800,
-                                          fontSize: 18,
+                                          fontSize: 16,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '~${DateFormat('HH:mm').format(end)}',
-                                        style: TextStyle(
-                                          color: showtime.bookable
-                                              ? Colors.white60
-                                              : Colors.white30,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        moneyLabel(showtime.basePrice),
-                                        style: TextStyle(
-                                          color: showtime.bookable
-                                              ? AppColors.primary
-                                              : Colors.white30,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 12,
+                                      TextSpan(
+                                        text:
+                                            ' ~ ${DateFormat('HH:mm').format(end)}',
+                                        style: const TextStyle(
+                                          color: cinemaPageMuted,
+                                          fontSize: 13,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              );
-                            }).toList(),
+                                const SizedBox(height: 10),
+                                Text(
+                                  seatText,
+                                  style: TextStyle(
+                                    color: showtime.bookable
+                                        ? cinemaPageMuted
+                                        : cinemaPageAccent,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
               ),
             ],

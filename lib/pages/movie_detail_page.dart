@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
@@ -7,9 +5,11 @@ import 'package:cinema_booking_system_app/pages/booking/booking_flow_models.dart
 import 'package:cinema_booking_system_app/pages/booking/booking_showtime_page.dart';
 import 'package:cinema_booking_system_app/pages/trailer_player_page.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
+import 'package:cinema_booking_system_app/services/auth_service.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
 import 'package:cinema_booking_system_app/services/review_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 class MovieDetailPage extends StatefulWidget {
   final String movieId;
@@ -21,17 +21,21 @@ class MovieDetailPage extends StatefulWidget {
 }
 
 class _MovieDetailPageState extends State<MovieDetailPage> {
+  final AuthService _authService = AuthService.instance;
   final MovieService _movieService = MovieService.instance;
   final ReviewService _reviewService = ReviewService.instance;
 
   MovieResponse? _movie;
   List<MoviePersonResponse> _people = const [];
   List<MovieImageResponse> _images = const [];
-  List<ReviewResponse> _reviews = const [];
+  List<ReviewSummaryResponse> _reviews = const [];
+  final Map<String, ReviewResponse> _reviewDetails = {};
+  int _reviewTotal = 0;
   double _averageRating = 0;
   bool _isLoading = true;
   bool _expandedOverview = false;
   bool _liked = false;
+  String? _currentUsername;
   String? _error;
 
   @override
@@ -53,6 +57,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         _safeImages(widget.movieId),
         _safeReviews(widget.movieId),
         _safeAverageRating(widget.movieId),
+        _safeCurrentUsername(),
       ]);
 
       if (!mounted) {
@@ -63,8 +68,12 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         _movie = movie;
         _people = results[0] as List<MoviePersonResponse>;
         _images = results[1] as List<MovieImageResponse>;
-        _reviews = results[2] as List<ReviewResponse>;
+        final reviewPage = results[2] as ReviewPageResponse;
+        _reviews = reviewPage.items;
+        _reviewTotal = reviewPage.totalElements;
+        _reviewDetails.clear();
         _averageRating = results[3] as double;
+        _currentUsername = results[4] as String?;
         _isLoading = false;
       });
     } catch (e) {
@@ -94,11 +103,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     }
   }
 
-  Future<List<ReviewResponse>> _safeReviews(String movieId) async {
+  Future<ReviewPageResponse> _safeReviews(String movieId) async {
     try {
-      return await _reviewService.getByMovie(movieId, size: 50);
+      return await _reviewService.getByMovie(movieId, size: 20);
     } catch (_) {
-      return const [];
+      return const ReviewPageResponse.empty();
     }
   }
 
@@ -107,6 +116,23 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       return await _reviewService.getAverageRating(movieId);
     } catch (_) {
       return 0;
+    }
+  }
+
+  Future<String?> _safeCurrentUsername() async {
+    try {
+      final isLoggedIn = await _authService.isLoggedIn();
+      if (!isLoggedIn) {
+        return null;
+      }
+      final user = await _authService.getCurrentUserResponse();
+      final username = user?.username.trim();
+      if (username == null || username.isEmpty) {
+        return null;
+      }
+      return username;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -248,7 +274,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
   List<_RatingBand> _ratingBands() {
     final reviews = _reviews;
-    final total = math.max(reviews.length, 1);
+    final total = reviews.isEmpty ? 1 : reviews.length;
+
     int countInRange(int min, int max) {
       return reviews
           .where((review) => review.rating >= min && review.rating <= max)
@@ -274,6 +301,333 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       return 18;
     }
     return scaled;
+  }
+
+  Future<void> _refreshReviews() async {
+    final results = await Future.wait<dynamic>([
+      _safeReviews(widget.movieId),
+      _safeAverageRating(widget.movieId),
+      _safeCurrentUsername(),
+    ]);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      final reviewPage = results[0] as ReviewPageResponse;
+      _reviews = reviewPage.items;
+      _reviewTotal = reviewPage.totalElements;
+      _reviewDetails.clear();
+      _averageRating = results[1] as double;
+      _currentUsername = results[2] as String?;
+    });
+  }
+
+  ReviewSummaryResponse? _findMyReviewSummary([String? username]) {
+    final current = (username ?? _currentUsername)?.trim().toLowerCase();
+    if (current == null || current.isEmpty) {
+      return null;
+    }
+
+    for (final review in _reviews) {
+      if (review.username.trim().toLowerCase() == current) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  bool _isMyReview(ReviewSummaryResponse review) {
+    final current = _currentUsername?.trim().toLowerCase();
+    if (current == null || current.isEmpty) {
+      return false;
+    }
+    return review.username.trim().toLowerCase() == current;
+  }
+
+  String _errorText(Object error, String fallback) {
+    final text = error.toString().trim();
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    final cleaned = text.replaceFirst('Exception: ', '');
+    if (cleaned.toLowerCase().contains('dioexception')) {
+      return fallback;
+    }
+    return cleaned;
+  }
+
+  void _showMessage(String message, {Color backgroundColor = AppColors.info}) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+      ),
+    );
+  }
+
+  Future<void> _promptLoginForReview() async {
+    final shouldOpenLogin = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: const Text(
+          'Dang nhap de danh gia',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Ban can dang nhap de viet binh luan va danh gia phim.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('De sau'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('Dang nhap'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldOpenLogin == true && mounted) {
+      context.goNamed('login');
+    }
+  }
+
+  Future<ReviewResponse> _loadReviewDetail(String reviewId) async {
+    final cached = _reviewDetails[reviewId];
+    if (cached != null) {
+      return cached;
+    }
+
+    final detail = await _reviewService.getById(reviewId);
+    _reviewDetails[reviewId] = detail;
+    return detail;
+  }
+
+  Future<void> _submitReview({
+    String? reviewId,
+    required int rating,
+    required String comment,
+  }) async {
+    final normalizedComment = comment.trim();
+    if (reviewId == null) {
+      await _reviewService.create(
+        movieId: widget.movieId,
+        rating: rating,
+        comment: normalizedComment,
+      );
+    } else {
+      await _reviewService.update(
+        reviewId,
+        movieId: widget.movieId,
+        rating: rating,
+        comment: normalizedComment,
+      );
+    }
+
+    await _refreshReviews();
+    _showMessage(
+      reviewId == null
+          ? 'Da dang danh gia thanh cong.'
+          : 'Da cap nhat danh gia.',
+      backgroundColor: AppColors.success,
+    );
+  }
+
+  Future<void> _openReviewComposer() async {
+    final username = _currentUsername ?? await _safeCurrentUsername();
+    if (!mounted) {
+      return;
+    }
+
+    if (username == null) {
+      await _promptLoginForReview();
+      return;
+    }
+
+    ReviewResponse? existingReview;
+    final reviewSummary = _findMyReviewSummary(username);
+    if (reviewSummary != null) {
+      try {
+        existingReview = await _loadReviewDetail(reviewSummary.id);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+        _showMessage(
+          _errorText(error, 'Khong the tai danh gia cua ban.'),
+          backgroundColor: AppColors.error,
+        );
+        return;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ReviewComposerSheet(
+        title: existingReview == null ? 'Viet danh gia' : 'Sua danh gia',
+        submitLabel:
+            existingReview == null ? 'Dang danh gia' : 'Cap nhat danh gia',
+        initialRating: existingReview?.rating ?? 0,
+        initialComment: existingReview?.comment ?? '',
+        onSubmit: (rating, comment) => _submitReview(
+          reviewId: existingReview?.id,
+          rating: rating,
+          comment: comment,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleWriteReview() async {
+    await _openReviewComposer();
+  }
+
+  Future<void> _editReview(ReviewSummaryResponse review) async {
+    try {
+      final detail = await _loadReviewDetail(review.id);
+      if (!mounted) {
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _ReviewComposerSheet(
+          title: 'Sua danh gia',
+          submitLabel: 'Cap nhat danh gia',
+          initialRating: detail.rating,
+          initialComment: detail.comment,
+          onSubmit: (rating, comment) => _submitReview(
+            reviewId: detail.id,
+            rating: rating,
+            comment: comment,
+          ),
+        ),
+      );
+    } catch (error) {
+      _showMessage(
+        _errorText(error, 'Khong the tai danh gia de chinh sua.'),
+        backgroundColor: AppColors.error,
+      );
+    }
+  }
+
+  Future<void> _deleteReview(ReviewSummaryResponse review) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: const Text(
+          'Xoa danh gia',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Ban co chac muon xoa danh gia nay khong?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Huy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: const Text('Xoa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await _reviewService.delete(review.id);
+      await _refreshReviews();
+      _showMessage(
+        'Da xoa danh gia.',
+        backgroundColor: AppColors.success,
+      );
+    } catch (error) {
+      _showMessage(
+        _errorText(error, 'Khong the xoa danh gia.'),
+        backgroundColor: AppColors.error,
+      );
+    }
+  }
+
+  Future<void> _showReviewDetails(ReviewSummaryResponse review) async {
+    try {
+      final detail = await _loadReviewDetail(review.id);
+      if (!mounted) {
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _ReviewDetailSheet(
+          review: detail,
+          createdAtLabel: _formatReviewDate(detail.createdAt),
+        ),
+      );
+    } catch (error) {
+      _showMessage(
+        _errorText(error, 'Khong the tai chi tiet danh gia.'),
+        backgroundColor: AppColors.error,
+      );
+    }
+  }
+
+  String _formatReviewDate(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Moi cap nhat';
+    }
+
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) {
+      return _formatDate(value.split('T').first);
+    }
+
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    return '$day/$month/${parsed.year}';
+  }
+
+  bool _shouldShowReadMore(ReviewSummaryResponse review) {
+    final comment = review.commentTruncated.trim();
+    if (comment.isEmpty) {
+      return false;
+    }
+    return comment.endsWith('...') ||
+        comment.endsWith('…') ||
+        comment.length >= 110;
   }
 
   @override
@@ -319,6 +673,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         const SizedBox(height: 22),
                         _buildMediaSection(movie),
                       ],
+                      const SizedBox(height: 22),
+                      _buildReviewsSection(),
                     ],
                   ),
                 ),
@@ -525,7 +881,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
   Widget _buildRatingCard() {
     final score = _averageRating > 0 ? _averageRating : 0;
-    final reviewCount = _reviews.length;
+    final reviewCount = _reviewTotal;
     final isFeatured = score >= 8;
     final bands = _ratingBands();
 
@@ -680,11 +1036,91 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     );
   }
 
+  Widget _buildReviewsSection() {
+    final myReview = _findMyReviewSummary();
+
+    return _SectionCard(
+      title: 'Binh luan khan gia',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  _reviews.isEmpty
+                      ? 'Chua co binh luan nao. Hay la nguoi dau tien danh gia phim nay.'
+                      : 'Cac nhan xet duoc hien thi tu danh gia thuc te cua khan gia.',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton(
+                onPressed: _handleWriteReview,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  myReview == null ? 'Viet danh gia' : 'Sua danh gia',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_reviews.isEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.cardDark,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Text(
+                'Dang nhap de viet review va xem y kien cua ban hien ngay trong danh sach nay.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            for (var index = 0; index < _reviews.length; index++) ...[
+              _ReviewCard(
+                review: _reviews[index],
+                isOwner: _isMyReview(_reviews[index]),
+                dateLabel: _formatReviewDate(_reviews[index].createdAt),
+                showReadMore: _shouldShowReadMore(_reviews[index]),
+                onReadMore: () => _showReviewDetails(_reviews[index]),
+                onEdit: () => _editReview(_reviews[index]),
+                onDelete: () => _deleteReview(_reviews[index]),
+              ),
+              if (index < _reviews.length - 1) const SizedBox(height: 14),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildOverview(MovieResponse movie) {
     final overview = movie.description.trim();
-    final isLong = overview.length > 240;
+    final words = overview.split(RegExp(r'\s+'));
+    final isLong = words.length > 50;
     final displayed = !_expandedOverview && isLong
-        ? '${overview.substring(0, 240).trimRight()}...'
+        ? '${words.take(50).join(' ')}...'
         : overview;
 
     return _SectionCard(
@@ -699,14 +1135,17 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           ),
           if (isLong) ...[
             const SizedBox(height: 10),
-            TextButton(
-              onPressed: () =>
+            GestureDetector(
+              onTap: () =>
                   setState(() => _expandedOverview = !_expandedOverview),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: EdgeInsets.zero,
+              child: Text(
+                _expandedOverview ? 'Thu gọn ▲' : 'Xem thêm ▼',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              child: Text(_expandedOverview ? 'Thu gọn' : 'Xem thêm'),
             ),
           ],
         ],
@@ -1080,6 +1519,561 @@ class _TrailerCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  final ReviewSummaryResponse review;
+  final bool isOwner;
+  final String dateLabel;
+  final bool showReadMore;
+  final VoidCallback onReadMore;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ReviewCard({
+    required this.review,
+    required this.isOwner,
+    required this.dateLabel,
+    required this.showReadMore,
+    required this.onReadMore,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final comment = review.commentTruncated.trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ReviewAvatar(username: review.username),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.username.isEmpty ? 'Nguoi dung' : review.username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      dateLabel,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _ScoreBadge(score: review.rating),
+              if (isOwner) ...[
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  tooltip: 'Tuy chon danh gia',
+                  color: AppColors.surfaceDark,
+                  icon: const Icon(Icons.more_vert, color: Colors.white70),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit();
+                      return;
+                    }
+                    if (value == 'delete') {
+                      onDelete();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Text('Sua'),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Xoa'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            comment.isEmpty ? 'Nguoi dung chua de lai noi dung.' : comment,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 15,
+              height: 1.6,
+            ),
+          ),
+          if (showReadMore) ...[
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: onReadMore,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Xem them',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewAvatar extends StatelessWidget {
+  final String username;
+
+  const _ReviewAvatar({required this.username});
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = username.trim();
+    final initial =
+        trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
+
+    return Container(
+      width: 46,
+      height: 46,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.16),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreBadge extends StatelessWidget {
+  final int score;
+
+  const _ScoreBadge({required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star_rounded, color: AppColors.secondary, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            '$score/10',
+            style: const TextStyle(
+              color: AppColors.secondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewComposerSheet extends StatefulWidget {
+  final String title;
+  final String submitLabel;
+  final int initialRating;
+  final String initialComment;
+  final Future<void> Function(int rating, String comment) onSubmit;
+
+  const _ReviewComposerSheet({
+    required this.title,
+    required this.submitLabel,
+    required this.initialRating,
+    required this.initialComment,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_ReviewComposerSheet> createState() => _ReviewComposerSheetState();
+}
+
+class _ReviewComposerSheetState extends State<_ReviewComposerSheet> {
+  late final TextEditingController _commentController;
+  late int _selectedRating;
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentController = TextEditingController(text: widget.initialComment);
+    _selectedRating = widget.initialRating;
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final comment = _commentController.text.trim();
+    if (_selectedRating < 1 || _selectedRating > 10) {
+      setState(() => _error = 'Vui long chon so diem tu 1 den 10.');
+      return;
+    }
+    if (comment.isEmpty) {
+      setState(() => _error = 'Vui long nhap noi dung danh gia.');
+      return;
+    }
+
+    setState(() {
+      _error = null;
+      _isSubmitting = true;
+    });
+
+    try {
+      await widget.onSubmit(_selectedRating, comment);
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final insets = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + insets),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Cham diem phim tu 1 den 10 va de lai nhan xet cua ban.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(
+                  10,
+                  (index) => _RatingChoiceChip(
+                    score: index + 1,
+                    selected: _selectedRating == index + 1,
+                    onTap: () => setState(() => _selectedRating = index + 1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _commentController,
+                minLines: 4,
+                maxLines: 6,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Noi dung cam nhan cua ban ve bo phim...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: AppColors.cardDark,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Huy'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(widget.submitLabel),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RatingChoiceChip extends StatelessWidget {
+  final int score;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RatingChoiceChip({
+    required this.score,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.18)
+              : AppColors.cardDark,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary
+                : Colors.white.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.star_rounded,
+              size: 16,
+              color: selected ? AppColors.primary : AppColors.secondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$score',
+              style: TextStyle(
+                color: selected ? AppColors.primary : Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReviewDetailSheet extends StatelessWidget {
+  final ReviewResponse review;
+  final String createdAtLabel;
+
+  const _ReviewDetailSheet({
+    required this.review,
+    required this.createdAtLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ReviewAvatar(username: review.username),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          review.username.isEmpty
+                              ? 'Nguoi dung'
+                              : review.username,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          createdAtLabel,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _ScoreBadge(score: review.rating),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Noi dung danh gia',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                review.comment.trim().isEmpty
+                    ? 'Nguoi dung chua de lai noi dung.'
+                    : review.comment.trim(),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  height: 1.7,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Dong'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

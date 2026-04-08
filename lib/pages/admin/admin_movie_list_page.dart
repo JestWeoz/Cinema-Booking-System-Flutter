@@ -346,7 +346,6 @@ class _AddMovieSheet extends StatefulWidget {
 
 class _AddMovieSheetState extends State<_AddMovieSheet> {
   final _titleCtrl = TextEditingController();
-  final _slugCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _durationCtrl = TextEditingController();
 
@@ -385,7 +384,6 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
   @override
   void dispose() {
     _titleCtrl.dispose();
-    _slugCtrl.dispose();
     _descCtrl.dispose();
     _durationCtrl.dispose();
     super.dispose();
@@ -412,10 +410,6 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
       _setError('Vui lòng nhập tiêu đề phim');
       return;
     }
-    if (_slugCtrl.text.trim().isEmpty) {
-      _setError('Vui lòng nhập slug');
-      return;
-    }
     if (_durationCtrl.text.trim().isEmpty) {
       _setError('Vui lòng nhập thời lượng');
       return;
@@ -428,12 +422,15 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
       _setError('Vui lòng tải trailer phim lên trước khi tạo');
       return;
     }
+    if (_selectedCategoryIds.isEmpty) {
+      _setError('Vui lòng chọn ít nhất 1 thể loại');
+      return;
+    }
 
     setState(() => _saving = true);
     try {
       await MovieService.instance.create(CreateMovieRequest(
         title: _titleCtrl.text.trim(),
-        slug: _slugCtrl.text.trim(),
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         duration: int.tryParse(_durationCtrl.text) ?? 90,
         releaseDate: _releaseDate,
@@ -510,7 +507,18 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
             // ── Fields ──
             _field(_titleCtrl, 'Tiêu đề *'),
             const SizedBox(height: 10),
-            _field(_slugCtrl, 'Slug *'),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Slug sẽ được tự động tạo từ tiêu đề phim.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ),
             const SizedBox(height: 10),
             _field(_descCtrl, 'Mô tả', maxLines: 3),
             const SizedBox(height: 10),
@@ -698,7 +706,9 @@ class _EditMovieSheetState extends State<_EditMovieSheet> {
   List<CategoryResponse> _categories = [];
   late Set<String> _selectedCategoryIds;
   bool _categoriesLoading = false;
+  AgeRating _ageRating = AgeRating.P;
   Language _language = Language.ORIGINAL;
+  DateTime _releaseDate = DateTime.now();
 
   @override
   void initState() {
@@ -707,7 +717,9 @@ class _EditMovieSheetState extends State<_EditMovieSheet> {
     _titleCtrl = TextEditingController(text: m.title);
     _descCtrl = TextEditingController(text: m.description);
     _durationCtrl = TextEditingController(text: m.duration.toString());
+    _ageRating = m.ageRating ?? AgeRating.P;
     _language = languageFromJson(m.language) ?? Language.ORIGINAL;
+    _releaseDate = DateTime.tryParse(m.releaseDate ?? '') ?? DateTime.now();
     _posterUrl = m.posterUrl;
     _trailerUrl = m.trailerUrl;
     // Khởi tạo category đã chọn từ movie hiện tại
@@ -739,19 +751,54 @@ class _EditMovieSheetState extends State<_EditMovieSheet> {
     if (mounted) setState(() => _errorMsg = msg);
   }
 
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _releaseDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (d != null && mounted) {
+      setState(() => _releaseDate = d);
+    }
+  }
+
   Future<void> _save() async {
     setState(() => _errorMsg = null);
+    if (_titleCtrl.text.trim().isEmpty) {
+      _setError('Vui lòng nhập tiêu đề phim');
+      return;
+    }
+    if (_durationCtrl.text.trim().isEmpty) {
+      _setError('Vui lòng nhập thời lượng');
+      return;
+    }
+    if (_posterUrl == null || _posterUrl!.isEmpty) {
+      _setError('Vui lòng tải poster phim');
+      return;
+    }
+    if (_trailerUrl == null || _trailerUrl!.isEmpty) {
+      _setError('Vui lòng tải trailer phim');
+      return;
+    }
+    if (_selectedCategoryIds.isEmpty) {
+      _setError('Vui lòng chọn ít nhất 1 thể loại');
+      return;
+    }
     setState(() => _saving = true);
     try {
       await MovieService.instance.update(
         widget.movie.id,
         UpdateMovieRequest(
-          title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+          title: _titleCtrl.text.trim(),
           description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-          duration: int.tryParse(_durationCtrl.text),
+          duration: int.tryParse(_durationCtrl.text) ?? widget.movie.duration,
+          releaseDate: _releaseDate,
+          ageRating: _ageRating,
           language: _language.name,
           posterUrl: _posterUrl,
           trailerUrl: _trailerUrl,
+          categoryIds: _selectedCategoryIds.toList(),
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -842,6 +889,14 @@ class _EditMovieSheetState extends State<_EditMovieSheet> {
                 }
               }),
             ),
+            const SizedBox(height: 10),
+
+            // ── Age Rating ──
+            _ageRatingDropdown(),
+            const SizedBox(height: 10),
+
+            // ── Release Date ──
+            _releaseDatePicker(),
             const SizedBox(height: 20),
 
             SizedBox(
@@ -948,6 +1003,46 @@ class _EditMovieSheetState extends State<_EditMovieSheet> {
             borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       );
+
+  Widget _ageRatingDropdown() {
+    return DropdownButtonFormField<AgeRating>(
+      initialValue: _ageRating,
+      isExpanded: true,
+      dropdownColor: AppColors.surfaceDark,
+      decoration: _deco('Giới hạn tuổi'),
+      style: const TextStyle(color: Colors.white),
+      items: AgeRating.values
+          .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _ageRating = v);
+      },
+    );
+  }
+
+  Widget _releaseDatePicker() {
+    return GestureDetector(
+      onTap: _pickDate,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, color: Colors.white54, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              'Ngày chiếu: ${_releaseDate.toLocal().toString().split(" ")[0]}',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Category Picker Widget ───────────────────────────────────────────────────

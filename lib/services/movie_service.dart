@@ -7,6 +7,7 @@ import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
 import 'package:cinema_booking_system_app/core/utils/image_url_resolver.dart';
 import 'package:cinema_booking_system_app/core/utils/media_upload_helper.dart';
 import 'package:cinema_booking_system_app/services/cloudinary_service.dart';
+import 'package:cinema_booking_system_app/services/review_service.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
 import 'package:cinema_booking_system_app/models/movie_model.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
@@ -56,7 +57,8 @@ class MoviePersonResponse {
   factory MoviePersonResponse.fromJson(Map<String, dynamic> json) =>
       MoviePersonResponse(
         peopleId: (json['peopleId'] ?? json['id'] ?? '').toString(),
-        fullName: (json['fullName'] ?? json['peopleName'] ?? json['name'] ?? '').toString(),
+        fullName: (json['fullName'] ?? json['peopleName'] ?? json['name'] ?? '')
+            .toString(),
         avatarUrl: ImageUrlResolver.pick(
           json,
           keys: const ['avatarUrl', 'peopleAvatar'],
@@ -73,6 +75,7 @@ class MovieService {
   static final MovieService instance = MovieService._();
 
   final Dio _dio = DioClient.instance;
+  final ReviewService _reviewService = ReviewService.instance;
 
   // ─── Internal helpers ─────────────────────────────────────────────────────
 
@@ -81,6 +84,30 @@ class MovieService {
     return raw
         .map((e) => MovieModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<MovieModel>> _attachAverageRatings(
+      List<MovieModel> movies) async {
+    if (movies.isEmpty) {
+      return movies;
+    }
+
+    final enriched = await Future.wait(
+      movies.map((movie) async {
+        if (movie.id.isEmpty) {
+          return movie;
+        }
+
+        try {
+          final averageRating = await _reviewService.getAverageRating(movie.id);
+          return movie.copyWith(rating: averageRating);
+        } catch (_) {
+          return movie;
+        }
+      }),
+    );
+
+    return enriched;
   }
 
   List _extractList(dynamic data) {
@@ -147,36 +174,37 @@ class MovieService {
   // ─── Public endpoints (backward-compatible — return MovieModel) ────────────
 
   /// GET /movies/now-showing — Phim đang chiếu
-  Future<List<MovieModel>> getNowShowing({int page = 1}) async {
+  Future<List<MovieModel>> getNowShowing({int page = 1, int size = 10}) async {
     final response = await _dio.get(
       MoviePaths.nowShowing,
-      queryParameters: {'page': page - 1, 'size': 10},
+      queryParameters: {'page': page - 1, 'size': size},
     );
-    return _parseModelList(response.data);
+    return _attachAverageRatings(_parseModelList(response.data));
   }
 
   /// GET /movies/coming-soon — Phim sắp chiếu
-  Future<List<MovieModel>> getComingSoon({int page = 1}) async {
+  Future<List<MovieModel>> getComingSoon({int page = 1, int size = 10}) async {
     final response = await _dio.get(
       MoviePaths.comingSoon,
-      queryParameters: {'page': page - 1, 'size': 10},
+      queryParameters: {'page': page - 1, 'size': size},
     );
-    return _parseModelList(response.data);
+    return _attachAverageRatings(_parseModelList(response.data));
   }
 
   /// GET /movies/recommend — Gợi ý phim
   Future<List<MovieModel>> getRecommended() async {
     final response = await _dio.get(MoviePaths.recommend);
-    return _parseModelList(response.data);
+    return _attachAverageRatings(_parseModelList(response.data));
   }
 
   /// GET /movies/search/{keyword} — Tìm kiếm phim
-  Future<List<MovieModel>> search(String query, {int page = 0, int size = 10}) async {
+  Future<List<MovieModel>> search(String query,
+      {int page = 0, int size = 10}) async {
     final response = await _dio.get(
       MoviePaths.searchByKeyword(query),
       queryParameters: {'page': page, 'size': size},
     );
-    return _parseModelList(response.data);
+    return _attachAverageRatings(_parseModelList(response.data));
   }
 
   /// GET /movies/{id} — Lấy chi tiết phim theo ID (legacy)
@@ -188,10 +216,12 @@ class MovieService {
       'title': r.title,
       'description': r.description,
       'posterUrl': r.posterUrl ?? '',
+      'rating': 0,
       'duration': r.duration,
       'releaseDate': r.releaseDate ?? '',
       'status': r.status?.name ?? 'NOW_SHOWING',
       'genres': r.categories.map((c) => c.name).toList(),
+      'ageRating': r.ageRating?.name,
     });
   }
 
@@ -235,7 +265,8 @@ class MovieService {
   }
 
   /// POST /movies/{movieId}/images — Thêm hình ảnh cho phim
-  Future<MovieImageResponse> addImage(String movieId, Map<String, dynamic> body) async {
+  Future<MovieImageResponse> addImage(
+      String movieId, Map<String, dynamic> body) async {
     final rawUrls = body['imageUrls'];
     final imageUrls = rawUrls is List
         ? rawUrls.map((e) => e.toString()).toList()
@@ -336,8 +367,7 @@ class MovieService {
   }
 
   /// DELETE /movies/{movieId}/people/bulk — Xóa nhiều người khỏi phim
-  Future<void> deletePeopleBulk(
-      String movieId, List<String> peopleIds) async {
+  Future<void> deletePeopleBulk(String movieId, List<String> peopleIds) async {
     await _dio.delete(
       MoviePaths.peopleBulkDelete(movieId),
       data: {'peopleIds': peopleIds},
@@ -430,7 +460,7 @@ class MovieService {
   /// Nếu bạn đã có URL thì dùng [create] truyền thẳng.
   Future<MovieResponse> createWithUpload({
     required CreateMovieRequest request,
-    String? posterFilePath,   // local file path (mobile/desktop)
+    String? posterFilePath, // local file path (mobile/desktop)
     String? trailerFilePath,
     void Function(bool)? onUploading,
     void Function(String)? onError,
@@ -445,7 +475,8 @@ class MovieService {
         filename: posterFilePath.split('/').last,
       );
       try {
-        final uploaded = await CloudinaryService.instance.uploadImage(multipart);
+        final uploaded =
+            await CloudinaryService.instance.uploadImage(multipart);
         if (uploaded.isNotEmpty) posterUrl = uploaded;
       } catch (e) {
         onError?.call('Lỗi upload poster: $e');
@@ -461,7 +492,8 @@ class MovieService {
         filename: trailerFilePath.split('/').last,
       );
       try {
-        final uploaded = await CloudinaryService.instance.uploadVideo(multipart);
+        final uploaded =
+            await CloudinaryService.instance.uploadVideo(multipart);
         if (uploaded.isNotEmpty) trailerUrl = uploaded;
       } catch (e) {
         onError?.call('Lỗi upload trailer: $e');

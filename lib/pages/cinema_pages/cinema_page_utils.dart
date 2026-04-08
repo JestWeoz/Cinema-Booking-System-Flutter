@@ -1,6 +1,16 @@
+import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+const Color cinemaPageAccent = AppColors.primary;
+const Color cinemaPageAccentSoft = Color(0x33E50914);
+const Color cinemaPageBackground = AppColors.backgroundDark;
+const Color cinemaPageCard = AppColors.surfaceDark;
+const Color cinemaPageCardAlt = AppColors.cardDark;
+const Color cinemaPageText = AppColors.textPrimaryDark;
+const Color cinemaPageMuted = AppColors.textSecondaryDark;
+const Color cinemaPageBorder = AppColors.dividerDark;
 
 DateTime parseShowtimeDateTime(String value) {
   return DateTime.tryParse(value) ?? DateTime(2000);
@@ -27,7 +37,7 @@ String weekdayLabel(DateTime value) {
     case DateTime.saturday:
       return 'Thứ 7';
     case DateTime.sunday:
-      return 'Chủ nhật';
+      return 'C.Nhật';
   }
   return '';
 }
@@ -35,7 +45,9 @@ String weekdayLabel(DateTime value) {
 String durationLabel(int minutes) {
   final hours = minutes ~/ 60;
   final remain = minutes % 60;
-  if (hours == 0) return '$remain phút';
+  if (hours == 0) {
+    return '$remain phút';
+  }
   return '$hours giờ ${remain.toString().padLeft(2, '0')} phút';
 }
 
@@ -66,19 +78,6 @@ String languageLabel(String? rawLanguage, Language? language) {
   };
 }
 
-double cinemaDistanceForIndex(int index) => 0.8 + (index * 0.7);
-
-String cinemaDistanceLabel(double distanceKm) {
-  if (distanceKm <= 1.1) return 'Bạn ở gần rạp này';
-  if (distanceKm <= 2.0) return 'Rạp phù hợp với bạn';
-  return 'Rạp đề xuất';
-}
-
-String formatDistance(double valueKm) {
-  if (valueKm < 1) return '${(valueKm * 1000).round()} m';
-  return '${valueKm.toStringAsFixed(1)} km';
-}
-
 class CinemaStatusView extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -101,19 +100,23 @@ class CinemaStatusView extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: onRetry == null ? Colors.white24 : const Color(0xFFFF5A5F),
+              color: onRetry == null ? cinemaPageMuted : cinemaPageAccent,
               size: 50,
             ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: cinemaPageMuted),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 14),
               ElevatedButton(
                 onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cinemaPageAccent,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Thử lại'),
               ),
             ],

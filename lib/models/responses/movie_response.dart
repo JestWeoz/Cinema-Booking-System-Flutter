@@ -42,11 +42,11 @@ class MovieResponse {
   });
 
   factory MovieResponse.fromJson(Map<String, dynamic> json) => MovieResponse(
-        id: json['id'] ?? '',
-        title: json['title'] ?? '',
+        id: json['id'] ?? json['movieId'] ?? '',
+        title: json['title'] ?? json['movieTitle'] ?? '',
         slug: json['slug'] ?? '',
         description: json['description'] ?? '',
-        duration: json['duration'] ?? 0,
+        duration: json['duration'] ?? json['durationMinutes'] ?? 0,
         releaseDate: json['releaseDate'],
         ageRating: json['ageRating'] != null
             ? AgeRating.values.byName(json['ageRating'])
@@ -122,8 +122,47 @@ class ReviewSummaryResponse {
       ReviewSummaryResponse(
         id: json['id'] ?? '',
         rating: json['rating'] ?? 0,
-        commentTruncated: json['commentTruncated'] ?? '',
+        commentTruncated: json['commentTruncated'] ?? json['comment'] ?? '',
         username: json['username'] ?? '',
         createdAt: json['createdAt'],
       );
+}
+
+class ReviewPageResponse {
+  final List<ReviewSummaryResponse> items;
+  final int page;
+  final int size;
+  final int totalElements;
+  final int totalPages;
+
+  const ReviewPageResponse({
+    required this.items,
+    required this.page,
+    required this.size,
+    required this.totalElements,
+    required this.totalPages,
+  });
+
+  const ReviewPageResponse.empty()
+      : items = const [],
+        page = 1,
+        size = 0,
+        totalElements = 0,
+        totalPages = 0;
+
+  factory ReviewPageResponse.fromJson(Map<String, dynamic> json) {
+    final items = (json['items'] as List<dynamic>?)
+            ?.map((e) =>
+                ReviewSummaryResponse.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const <ReviewSummaryResponse>[];
+
+    return ReviewPageResponse(
+      items: items,
+      page: json['page'] ?? 1,
+      size: json['size'] ?? items.length,
+      totalElements: json['totalElements'] ?? items.length,
+      totalPages: json['totalPages'] ?? (items.isEmpty ? 0 : 1),
+    );
+  }
 }

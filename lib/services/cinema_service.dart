@@ -56,7 +56,7 @@ class CinemaService {
         last: true,
       );
     }
-    return PaginatedResponse<CinemaResponse>(
+    return const PaginatedResponse<CinemaResponse>(
       content: [],
       totalElements: 0,
       totalPages: 0,
@@ -65,6 +65,13 @@ class CinemaService {
       first: true,
       last: true,
     );
+  }
+
+  dynamic _unwrap(dynamic data) {
+    if (data is Map<String, dynamic> && data['data'] != null) {
+      return data['data'];
+    }
+    return data;
   }
 
   /// GET /cinema — Lấy danh sách rạp
@@ -133,14 +140,19 @@ class CinemaService {
         if (date != null) 'date': date,
       },
     );
-    final data = response.data;
+    final data = _unwrap(response.data);
     if (data is List) {
       return data
           .map((e) => MovieResponse.fromJson(e as Map<String, dynamic>))
           .toList();
     }
-    if (data is Map<String, dynamic> && data['data'] is List) {
-      return (data['data'] as List)
+    if (data is Map<String, dynamic> && data['items'] is List) {
+      return (data['items'] as List)
+          .map((e) => MovieResponse.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (data is Map<String, dynamic> && data['content'] is List) {
+      return (data['content'] as List)
           .map((e) => MovieResponse.fromJson(e as Map<String, dynamic>))
           .toList();
     }

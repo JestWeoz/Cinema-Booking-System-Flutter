@@ -16,35 +16,60 @@ class ReviewService {
     return ReviewResponse.fromJson(data as Map<String, dynamic>);
   }
 
-  List<ReviewResponse> _parseList(dynamic data) {
-    if (data is List) {
-      return data
-          .map((e) => ReviewResponse.fromJson(e as Map<String, dynamic>))
-          .toList();
+  ReviewPageResponse _parsePage(dynamic data) {
+    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+      return ReviewPageResponse.fromJson(data['data'] as Map<String, dynamic>);
     }
     if (data is Map<String, dynamic> && data['content'] is List) {
-      return (data['content'] as List)
-          .map((e) => ReviewResponse.fromJson(e as Map<String, dynamic>))
+      final items = (data['content'] as List)
+          .map((e) => ReviewSummaryResponse.fromJson(
+                e as Map<String, dynamic>,
+              ))
           .toList();
+      return ReviewPageResponse(
+        items: items,
+        page: data['page'] ?? 1,
+        size: data['size'] ?? items.length,
+        totalElements: data['totalElements'] ?? items.length,
+        totalPages: data['totalPages'] ?? (items.isEmpty ? 0 : 1),
+      );
     }
-    if (data is Map<String, dynamic> && data['data'] is List) {
-      return (data['data'] as List)
-          .map((e) => ReviewResponse.fromJson(e as Map<String, dynamic>))
+    if (data is Map<String, dynamic>) {
+      return ReviewPageResponse.fromJson(data);
+    }
+    if (data is List) {
+      final items = data
+          .map((e) => ReviewSummaryResponse.fromJson(
+                e as Map<String, dynamic>,
+              ))
           .toList();
+      return ReviewPageResponse(
+        items: items,
+        page: 1,
+        size: items.length,
+        totalElements: items.length,
+        totalPages: items.isEmpty ? 0 : 1,
+      );
     }
-    return [];
+    return const ReviewPageResponse.empty();
   }
 
   /// GET /reviews/movies/{movieId} — Lấy danh sách đánh giá theo phim
-  Future<List<ReviewResponse>> getByMovie(String movieId, {
-    int page = 0,
+  Future<ReviewPageResponse> getByMovie(
+    String movieId, {
+    int page = 1,
     int size = 10,
+    int? minimumRating,
   }) async {
     final response = await _dio.get(
       ReviewPaths.byMovie(movieId),
-      queryParameters: {'page': page, 'size': size},
+      queryParameters: {
+        'page': page,
+        'size': size,
+        if (minimumRating != null) 'minimumRating': minimumRating,
+      },
     );
-    return _parseList(response.data);
+    return _parsePage(response.data);
   }
 
   /// GET /reviews/{reviewId} — Lấy thông tin đánh giá
@@ -68,11 +93,14 @@ class ReviewService {
   }
 
   /// PUT /reviews/{reviewId} — Cập nhật đánh giá
-  Future<ReviewResponse> update(String reviewId, {
+  Future<ReviewResponse> update(
+    String reviewId, {
+    String? movieId,
     int? rating,
     String? comment,
   }) async {
     final response = await _dio.put(ReviewPaths.byId(reviewId), data: {
+      if (movieId != null) 'movieId': movieId,
       if (rating != null) 'rating': rating,
       if (comment != null) 'comment': comment,
     });

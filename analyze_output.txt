@@ -1,0 +1,20 @@
+﻿Analyzing admin_movie_list_page.dart...                         
+
+warning - The declaration '_pickDate' isn't referenced - lib\pages\admin\admin_movie_list_page.dart:788:16 - unused_element
+
+flutter : 1 issue found. (ran in 
+2.4s)
+At line:1 char:78
++ ... stem_app" ; flutter 
+analyze lib/pages/admin/admin_mov
+ie_list_page.dar ...
++                 ~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo          : No 
+   tSpecified: (1 issue found.   
+  (ran in 2.4s):String) [], Re   
+ moteException
+    + FullyQualifiedErrorId : Na 
+   tiveCommandError
+ 

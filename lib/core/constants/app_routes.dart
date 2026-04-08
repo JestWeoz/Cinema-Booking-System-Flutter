@@ -1,23 +1,21 @@
-// Route names - centralized route constants
 class AppRoutes {
   AppRoutes._();
 
-  // Auth
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
 
-  // Main
   static const String home = '/home';
   static const String movies = '/movies';
   static const String movieDetail = '/movies/:id';
+  static const String movieCatalog = '/movie-catalog/:section';
   static const String search = '/search';
   static const String schedules = '/schedules';
+  static const String scheduleDetail = '/schedules/:cinemaId';
   static const String offers = '/offers';
 
-  // Booking Flow
   static const String cinemas = '/cinemas';
   static const String showtime = '/showtime';
   static const String seatSelection = '/seat-selection';
@@ -26,7 +24,6 @@ class AppRoutes {
   static const String paymentResult = '/payment-result';
   static const String bookingSuccess = '/booking-success';
 
-  // Profile & Tickets
   static const String profile = '/profile';
   static const String tickets = '/tickets';
   static const String ticketDetail = '/tickets/:id';
@@ -35,7 +32,6 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String settings = '/settings';
 
-  // Admin
   static const String admin = '/admin';
   static const String adminMovies = '/admin/movies';
   static const String adminShowtimes = '/admin/showtimes';
@@ -53,4 +49,7 @@ class AppRoutes {
   static const String adminPeople = '/admin/people';
 
   static String adminShowtimeEditById(String id) => '/admin/showtimes/$id/edit';
+  static String movieCatalogBySection(String section) =>
+      '/movie-catalog/$section';
+  static String scheduleByCinemaId(String cinemaId) => '/schedules/$cinemaId';
 }

@@ -28,11 +28,12 @@ class CinemaMovieGroup {
 
 enum CinemaTimeFilter {
   all('Tất cả'),
-  day('09:00 - 15:00'),
-  evening('15:00 - 21:00'),
-  late('21:00 - khuya');
+  noon('12:00 - 15:00'),
+  afternoon('15:00 - 18:00'),
+  evening('18:00 - 24:00');
 
   final String label;
+
   const CinemaTimeFilter(this.label);
 }
 

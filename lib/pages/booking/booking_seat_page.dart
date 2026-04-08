@@ -210,7 +210,7 @@ class _BookingSeatPageState extends State<BookingSeatPage> {
       0,
       (sum, seat) => sum + seat.finalPrice,
     );
-    final mapWidth = (seatNumbers.length * 62) + 96;
+    final mapWidth = (seatNumbers.length * 44) + 68;
 
     return BookingPageScaffold(
       title: 'Chọn ghế',
@@ -264,7 +264,7 @@ class _BookingSeatPageState extends State<BookingSeatPage> {
             )
           else if (seatMap != null) ...[
             BookingSectionCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -283,9 +283,9 @@ class _BookingSeatPageState extends State<BookingSeatPage> {
                   ),
                   const SizedBox(height: 14),
                   const _SeatScreenBanner(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.cardDark,
                       borderRadius: BorderRadius.circular(24),
@@ -302,17 +302,17 @@ class _BookingSeatPageState extends State<BookingSeatPage> {
                             child: Column(
                               children: [
                                 _SeatNumberHeader(numbers: seatNumbers),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 6),
                                 ...rows.map(
                                   (rowLabel) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.only(bottom: 6),
                                     child: Row(
                                       children: [
                                         _RowBadge(label: rowLabel),
                                         ...seatNumbers.map(
                                           (seatNumber) => Padding(
                                             padding: const EdgeInsets.symmetric(
-                                                horizontal: 3),
+                                                horizontal: 1.5),
                                             child: Builder(
                                               builder: (_) {
                                                 final seat =
@@ -320,7 +320,7 @@ class _BookingSeatPageState extends State<BookingSeatPage> {
                                                         ?[seatNumber];
                                                 if (seat == null) {
                                                   return const SizedBox(
-                                                      width: 50, height: 50);
+                                                      width: 36, height: 36);
                                                 }
                                                 final selected = _selectedSeats
                                                     .containsKey(seat.seatId);
@@ -448,23 +448,23 @@ class _SeatNumberHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const SizedBox(width: 40),
+        const SizedBox(width: 26),
         ...numbers.map(
           (number) => SizedBox(
-            width: 56,
+            width: 40,
             child: Center(
               child: Text(
                 '$number',
                 style: const TextStyle(
                   color: Colors.white38,
-                  fontSize: 11,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 40),
+        const SizedBox(width: 26),
       ],
     );
   }
@@ -478,14 +478,14 @@ class _RowBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 40,
+      width: 26,
       child: Center(
         child: Container(
-          width: 28,
-          height: 28,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: AppColors.surfaceDark,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(7),
             border: Border.all(color: Colors.white10),
           ),
           child: Center(
@@ -493,6 +493,7 @@ class _RowBadge extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: Colors.white70,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -534,14 +535,14 @@ class _SeatCell extends StatelessWidget {
           '${seat.seatRow}${seat.seatNumber} • ${bookingFormatCurrency(seat.finalPrice)}',
       child: InkWell(
         onTap: disabled ? null : onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 50,
-          height: 50,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: fill,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: border, width: 1.4),
           ),
           child: Center(
@@ -549,7 +550,7 @@ class _SeatCell extends StatelessWidget {
               '${seat.seatRow}${seat.seatNumber}',
               style: TextStyle(
                 color: text,
-                fontSize: 11,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
               ),
             ),

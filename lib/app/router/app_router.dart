@@ -5,11 +5,14 @@ import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/pages/login_page.dart';
 import 'package:cinema_booking_system_app/pages/register_page.dart';
 import 'package:cinema_booking_system_app/pages/home_page.dart';
+import 'package:cinema_booking_system_app/pages/movie_catalog_page.dart';
 import 'package:cinema_booking_system_app/pages/movie_detail_page.dart';
+import 'package:cinema_booking_system_app/pages/movie_search_page.dart';
 import 'package:cinema_booking_system_app/pages/seat_selection_page.dart';
 import 'package:cinema_booking_system_app/pages/profile_page.dart';
 import 'package:cinema_booking_system_app/pages/tickets_page.dart';
 import 'package:cinema_booking_system_app/pages/cinema_pages/cinema_pages.dart';
+import 'package:cinema_booking_system_app/pages/cinema_pages/cinema_schedule_page.dart';
 import 'package:cinema_booking_system_app/pages/offers_page.dart';
 import 'package:cinema_booking_system_app/pages/edit_profile_page.dart';
 import 'package:cinema_booking_system_app/pages/change_password_page.dart';
@@ -87,6 +90,25 @@ class AppRouter {
       ),
 
       // ─── Admin (no bottom nav shell) ─────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.movieCatalog,
+        name: 'movieCatalog',
+        builder: (_, state) => MovieCatalogPage(
+          section: state.pathParameters['section'] ?? 'now-showing',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        name: 'search',
+        builder: (_, __) => const MovieSearchPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.movieDetail,
+        name: 'movieDetail',
+        builder: (context, state) => MovieDetailPage(
+          movieId: state.pathParameters['id']!,
+        ),
+      ),
       GoRoute(
         path: AppRoutes.admin,
         name: 'admin',
@@ -188,13 +210,6 @@ class AppRouter {
             builder: (_, __) => const HomePage(),
           ),
           GoRoute(
-            path: AppRoutes.movieDetail,
-            name: 'movieDetail',
-            builder: (context, state) => MovieDetailPage(
-              movieId: state.pathParameters['id']!,
-            ),
-          ),
-          GoRoute(
             path: AppRoutes.seatSelection,
             name: 'seatSelection',
             builder: (_, __) => const SeatSelectionPage(),
@@ -208,6 +223,13 @@ class AppRouter {
             path: AppRoutes.schedules,
             name: 'schedules',
             builder: (_, __) => const CinemaPages(),
+          ),
+          GoRoute(
+            path: AppRoutes.scheduleDetail,
+            name: 'scheduleDetail',
+            builder: (_, state) => CinemaSchedulePage(
+              cinemaId: state.pathParameters['cinemaId'] ?? '',
+            ),
           ),
           GoRoute(
             path: AppRoutes.offers,
