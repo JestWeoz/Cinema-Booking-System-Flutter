@@ -46,8 +46,15 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (mounted) {
         final isAdmin = await AuthService.instance.isAdmin();
+        final isStaff = await AuthService.instance.isStaff();
         if (mounted) {
-          context.go(isAdmin ? AppRoutes.admin : AppRoutes.home);
+          if (isAdmin) {
+            context.go(AppRoutes.admin);
+          } else if (isStaff) {
+            context.go(AppRoutes.staff);
+          } else {
+            context.go(AppRoutes.home);
+          }
         }
       }
     } catch (e) {

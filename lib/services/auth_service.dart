@@ -171,6 +171,11 @@ class AuthService {
     return roles.any((r) => r.toUpperCase().contains('ADMIN'));
   }
 
+  Future<bool> isStaff() async {
+    final roles = await getRoles();
+    return roles.any((r) => r.toUpperCase().contains('STAFF'));
+  }
+
   Future<void> changePassword(ChangePasswordRequest request) async {
     await _dio.put(UserPaths.changePassword, data: request.toJson());
   }

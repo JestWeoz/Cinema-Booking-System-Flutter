@@ -32,6 +32,7 @@ import 'package:cinema_booking_system_app/pages/admin/admin_product_list_page.da
 import 'package:cinema_booking_system_app/pages/admin/admin_people_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_room_list_page.dart';
 import 'package:cinema_booking_system_app/pages/admin/cinema/admin_seat_list_page.dart';
+import 'package:cinema_booking_system_app/pages/staff/staff_checkin_page.dart';
 import 'package:cinema_booking_system_app/pages/booking/booking_payment_result_page.dart';
 import 'package:cinema_booking_system_app/app/shell/main_shell.dart';
 
@@ -113,6 +114,11 @@ class AppRouter {
         path: AppRoutes.admin,
         name: 'admin',
         builder: (_, __) => const AdminMenuPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.staff,
+        name: 'staff',
+        builder: (_, __) => const StaffCheckInPage(),
       ),
       GoRoute(
         path: AppRoutes.adminMovies,

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:cinema_booking_system_app/core/network/dio_client.dart';
 import 'package:cinema_booking_system_app/core/constants/api_paths.dart';
+import 'package:cinema_booking_system_app/models/responses/checkin_response.dart';
 import 'package:cinema_booking_system_app/models/responses/ticket_response.dart';
 
 class TicketService {
@@ -51,10 +52,24 @@ class TicketService {
   }
 
   /// POST /tickets/check-in — Check-in nhiều vé
-  Future<void> checkIn(List<String> ticketCodes) async {
-    await _dio.post(
+  Future<CheckInResponse> checkInByBookingCode(String bookingCode) async {
+    final response = await _dio.post(
       TicketPaths.checkIn,
-      data: {'ticketCodes': ticketCodes},
+      data: {'bookingCode': bookingCode},
     );
+
+    final data = response.data;
+    Map<String, dynamic>? raw;
+    if (data is Map<String, dynamic>) {
+      if (data['data'] is Map<String, dynamic>) {
+        raw = data['data'] as Map<String, dynamic>;
+      } else {
+        raw = data;
+      }
+    }
+    if (raw != null) {
+      return CheckInResponse.fromJson(raw);
+    }
+    throw Exception('Du lieu check-in khong hop le');
   }
 }

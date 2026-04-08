@@ -33,6 +33,7 @@ class AppRoutes {
   static const String settings = '/settings';
 
   static const String admin = '/admin';
+  static const String staff = '/staff';
   static const String adminMovies = '/admin/movies';
   static const String adminShowtimes = '/admin/showtimes';
   static const String adminShowtimeCreate = '/admin/showtimes/create';
