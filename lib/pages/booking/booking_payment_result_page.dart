@@ -93,8 +93,8 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
       }
 
       if (!mounted) return;
-      final paymentResult = await Navigator.of(context).push<
-          BookingPaymentWebViewResult>(
+      final paymentResult =
+          await Navigator.of(context).push<BookingPaymentWebViewResult>(
         MaterialPageRoute<BookingPaymentWebViewResult>(
           builder: (_) => BookingPaymentWebViewPage(
             paymentUrl: url,
@@ -147,39 +147,39 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
   String get _statusTitle {
     switch (_effectiveStatus) {
       case PaymentStatus.SUCCESS:
-        return 'Thanh toan thanh cong';
+        return 'Thanh toán thành công';
       case PaymentStatus.FAILED:
-        return 'Thanh toan that bai';
+        return 'Thanh toán thất bại';
       case PaymentStatus.REFUNDED:
-        return 'Thanh toan da hoan tien';
+        return 'Thanh toán đã hoàn tiền';
       case PaymentStatus.PENDING:
-        return 'Dang cho xac nhan thanh toan';
+        return 'Đang chờ xác nhận thanh toán';
     }
   }
 
   String get _statusDescription {
     switch (_effectiveStatus) {
       case PaymentStatus.SUCCESS:
-        return 'Giao dich da quay ve app va booking cua ban da duoc xac nhan.';
+        return 'Giao dịch đã quay về app và booking của bạn đã được xác nhận.';
       case PaymentStatus.FAILED:
-        return 'VNPay da tra ve ket qua chua thanh cong. Ban co the thu lai ngay trong app.';
+        return 'VNPay đã trả về kết quả chưa thành công. Bạn có thể thử lại ngay trong app.';
       case PaymentStatus.REFUNDED:
-        return 'Khoan thanh toan nay da duoc hoan lai.';
+        return 'Khoản thanh toán này đã được hoàn lại.';
       case PaymentStatus.PENDING:
-        return 'Giao dich da quay ve app, nhung backend co the van dang doi IPN dong bo. Ban co the kiem tra lai sau it giay.';
+        return 'Giao dịch đã quay về app, nhưng backend có thể vẫn đang đợi IPN đồng bộ. Bạn có thể kiểm tra lại sau ít giây.';
     }
   }
 
   String get _primaryButtonText {
     switch (_effectiveStatus) {
       case PaymentStatus.SUCCESS:
-        return 'Xem ve cua toi';
+        return 'Về trang chủ';
       case PaymentStatus.FAILED:
-        return 'Thanh toan lai';
+        return 'Thanh toán lại';
       case PaymentStatus.REFUNDED:
-        return 'Ve trang chu';
+        return 'Về trang chủ';
       case PaymentStatus.PENDING:
-        return 'Kiem tra lai';
+        return 'Kiểm tra lại';
     }
   }
 
@@ -187,7 +187,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
     switch (_effectiveStatus) {
       case PaymentStatus.SUCCESS:
         if (!mounted) return;
-        context.go(AppRoutes.tickets);
+        context.go(AppRoutes.home);
         break;
       case PaymentStatus.FAILED:
         await _retryPayment();
@@ -205,11 +205,12 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
   @override
   Widget build(BuildContext context) {
     return BookingPageScaffold(
-      title: 'Ket qua thanh toan',
+      title: 'Kết quả thanh toán',
       bottomNavigationBar: BookingBottomBar(
-        label: 'Trang thai',
+        label: 'Trạng thái',
         value: _effectiveStatus.name,
-        note: 'App da nhan callback tu VNPay va dang dong bo trang thai moi nhat.',
+        note:
+            'App đã nhận callback từ VNPay và đang đồng bộ trạng thái mới nhất.',
         buttonText: _primaryButtonText,
         onPressed: (_loading || _reopeningPayment) ? null : _onPrimaryPressed,
         loading: _reopeningPayment,
@@ -257,7 +258,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Chi tiet giao dich',
+                  'Chi tiết giao dịch',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -268,18 +269,18 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
                 _SummaryLine(label: 'Booking ID', value: widget.bookingId),
                 if ((widget.bookingCode ?? '').isNotEmpty)
                   _SummaryLine(
-                    label: 'Ma booking',
+                    label: 'Mã booking',
                     value: widget.bookingCode!,
                   ),
                 if ((_payment?.amount ?? 0) > 0)
                   _SummaryLine(
-                    label: 'So tien',
+                    label: 'Số tiền',
                     value: bookingFormatCurrency(_payment!.amount),
                   ),
                 if ((widget.transactionId ?? _payment?.transactionId ?? '')
                     .isNotEmpty)
                   _SummaryLine(
-                    label: 'Ma giao dich',
+                    label: 'Mã giao dịch',
                     value: widget.transactionId ?? _payment!.transactionId!,
                   ),
                 if ((widget.responseCode ?? '').isNotEmpty)
@@ -288,7 +289,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
                     value: widget.responseCode!,
                   ),
                 _SummaryLine(
-                  label: 'Trang thai backend',
+                  label: 'Trạng thái backend',
                   value: _effectiveStatus.name,
                   highlight: true,
                 ),
@@ -299,7 +300,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
             const SizedBox(height: 16),
             BookingSectionCard(
               child: Text(
-                'Khong tai duoc thong tin thanh toan moi nhat: $_error',
+                'Không tải được thông tin thanh toán mới nhất: $_error',
                 style: const TextStyle(color: Colors.white70, height: 1.5),
               ),
             ),
@@ -310,7 +311,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tuy chon',
+                  'Tùy chọn',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -332,7 +333,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
                             ),
                           )
                         : const Icon(Icons.refresh_rounded),
-                    label: const Text('Cap nhat trang thai'),
+                    label: const Text('Cập nhật trạng thái'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.secondary,
                       side: BorderSide(
@@ -350,7 +351,7 @@ class _BookingPaymentResultPageState extends State<BookingPaymentResultPage> {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () => context.go(AppRoutes.home),
-                    child: const Text('Ve trang chu'),
+                    child: const Text('Về trang chủ'),
                   ),
                 ),
               ],

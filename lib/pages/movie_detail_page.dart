@@ -312,12 +312,12 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
   double _buttonFontSize(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final scaled = width * 0.048;
-    if (scaled < 15) {
-      return 15;
+    final scaled = width * 0.043;
+    if (scaled < 13) {
+      return 13;
     }
-    if (scaled > 18) {
-      return 18;
+    if (scaled > 16) {
+      return 16;
     }
     return scaled;
   }
@@ -863,7 +863,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                             movie.title,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 28,
+                              fontSize: 24,
                               height: 1.1,
                               fontWeight: FontWeight.w800,
                             ),
@@ -898,7 +898,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       Text(
                         movie.categories.map((item) => item.name).join(' • '),
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 15),
+                            color: Colors.white70, fontSize: 13),
                       ),
                     ],
                     const SizedBox(height: 14),
@@ -906,7 +906,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       'Phim được phổ biến đến người xem phù hợp với phân loại tuổi hiện tại.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.72),
-                        fontSize: 13,
+                        fontSize: 12,
                         height: 1.4,
                       ),
                     ),
@@ -1033,7 +1033,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       isFeatured ? 'Siêu phẩm nổi bật' : 'Đánh giá cộng đồng',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1043,7 +1043,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                           ? '$reviewCount đánh giá từ khán giả đã xem phim'
                           : 'Chưa có đủ dữ liệu đánh giá từ khán giả',
                       style:
-                          const TextStyle(color: Colors.white70, fontSize: 14),
+                          const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ],
                 ),
@@ -1074,7 +1074,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                             text: score.toStringAsFixed(1),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 42,
+                              fontSize: 36,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -1082,7 +1082,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                             text: '/10',
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 22,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1095,7 +1095,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                           ? '($reviewCount đánh giá)'
                           : 'Chưa có đánh giá',
                       style:
-                          const TextStyle(color: Colors.white70, fontSize: 16),
+                          const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
@@ -1119,7 +1119,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                                 child: Text(
                                   band.label,
                                   style: const TextStyle(
-                                      color: Colors.white70, fontSize: 14),
+                                      color: Colors.white70, fontSize: 13),
                                 ),
                               ),
                               const Icon(Icons.star_border_rounded,
@@ -1574,7 +1574,7 @@ class _StatColumn extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
           ),
           const SizedBox(height: 10),
           Text(
@@ -1582,7 +1582,7 @@ class _StatColumn extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 17,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1640,7 +1640,7 @@ class _HeaderActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontSize = compact ? 12.0 : 15.0;
+    final fontSize = compact ? 11.0 : 13.0;
     final iconSize = compact ? 16.0 : 20.0;
 
     return OutlinedButton(

@@ -27,7 +27,7 @@ class ReviewAiSummaryService {
   ReviewAiSummaryService._();
   static final ReviewAiSummaryService instance = ReviewAiSummaryService._();
 
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
+  static const String _apiKey = "AIzaSyAMqQ1GUfhwVLLFkZZx2YPgxHnF4JPdMdY";
   static const Duration _cacheTtl = Duration(hours: 6);
   static const List<String> _models = [
     'gemini-2.5-flash',
@@ -54,16 +54,16 @@ class ReviewAiSummaryService {
     if (error is DioException) {
       final status = error.response?.statusCode ?? 0;
       if (status == 503) {
-        return 'AI dang qua tai, thu lai sau it giay.';
+        return 'AI đang quá tải, thử lại sau ít giây.';
       }
       if (status == 429) {
-        return 'AI da het quota hoac vuot gioi han goi. Thu lai sau.';
+        return 'AI đã hết quota hoặc vượt giới hạn gói. Thử lại sau.';
       }
       if (status == 401 || status == 403) {
-        return 'API key Gemini khong hop le hoac khong co quyen.';
+        return 'API key Gemini không hợp lệ hoặc không có quyền.';
       }
     }
-    return 'Khong the tao tom tat AI luc nay.';
+    return 'Không thể tạo tóm tắt AI lúc này.';
   }
 
   Future<ReviewAiSummaryResult?> summarizeMovieReviews({

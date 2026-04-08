@@ -99,7 +99,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
       if (!mounted) return;
       setState(() {
         _loadingPromotions = false;
-        _promotionLoadError = 'Khong tai duoc danh sach voucher: $e';
+        _promotionLoadError = 'Không tải được Danh sách ưu đãi: $e';
       });
     }
   }
@@ -126,7 +126,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
     }
     if (_currentUserId == null || _currentUserId!.isEmpty) {
       setState(() {
-        _promotionApplyError = 'Can dang nhap de ap dung voucher.';
+        _promotionApplyError = 'Cần đăng nhập để áp dụng voucher.';
       });
       return false;
     }
@@ -167,7 +167,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
       if (showSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Da ap dung voucher $normalizedCode'),
+            content: Text('Đã áp dụng voucher $normalizedCode'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -285,14 +285,14 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
     final appliedPromotionCode = _promotionPreview?.promotionCode.toUpperCase();
 
     return BookingPageScaffold(
-      title: 'Thong tin dat ve',
+      title: 'Thông tin đặt vé',
       bottomNavigationBar: BookingBottomBar(
-        label: discountAmount > 0 ? 'Tong sau voucher' : 'Tong tam tinh',
+        label: discountAmount > 0 ? 'Tổng sau voucher' : 'Tổng tạm tính',
         value: bookingFormatCurrency(total),
         note: discountAmount > 0
-            ? 'Da giam ${bookingFormatCurrency(discountAmount)} voi voucher ${_promotionPreview!.promotionCode}.'
-            : 'Kiem tra ky thong tin truoc khi sang buoc thanh toan.',
-        buttonText: 'Den thanh toan',
+            ? 'Đã giảm ${bookingFormatCurrency(discountAmount)} với voucher ${_promotionPreview!.promotionCode}.'
+            : 'Kiểm tra kỹ thông tin trước khi sang bước thanh toán.',
+        buttonText: 'Đến thanh toán',
         onPressed: _submitBooking,
         loading: _submitting,
       ),
@@ -312,7 +312,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Thong tin ve',
+                  'Thông tin vé',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -321,28 +321,28 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                 ),
                 const SizedBox(height: 14),
                 _InfoRow(
-                  label: 'Rap',
+                  label: 'Rạp',
                   value: draft.showtime.cinemaName,
                 ),
                 _InfoRow(
-                  label: 'Phong chieu',
+                  label: 'Phòng chiếu',
                   value: draft.showtime.roomName,
                 ),
                 _InfoRow(
-                  label: 'Suat chieu',
+                  label: 'Suất chiếu',
                   value: bookingFormatTimeRange(
                     draft.showtime.startTime,
                     draft.showtime.endTime,
                   ),
                 ),
                 _InfoRow(
-                  label: 'Ngay xem',
+                  label: 'Ngày xem',
                   value: bookingFormatDateLong(
                     DateTime.parse(draft.showtime.startTime).toLocal(),
                   ),
                 ),
                 _InfoRow(
-                  label: 'Ghe da chon',
+                  label: 'Ghế đã chọn',
                   value: draft.seatLabel,
                 ),
               ],
@@ -354,7 +354,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Uu dai',
+                  'Ưu đãi',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -368,7 +368,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                   enabled: !_applyingPromotion,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Nhap ma khuyen mai neu co',
+                    hintText: 'Nhập mã khuyến mãi nếu có',
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
                     fillColor: AppColors.cardDark,
@@ -401,7 +401,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                                   Icons.local_offer_outlined,
                                   size: 18,
                                 ),
-                          label: const Text('Ap dung'),
+                          label: const Text('Áp dụng'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white12),
@@ -416,11 +416,12 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                     SizedBox(
                       height: 44,
                       child: TextButton(
-                        onPressed: _promotionCodeController.text.trim().isEmpty &&
-                                _promotionPreview == null
-                            ? null
-                            : _clearPromotion,
-                        child: const Text('Bo chon'),
+                        onPressed:
+                            _promotionCodeController.text.trim().isEmpty &&
+                                    _promotionPreview == null
+                                ? null
+                                : _clearPromotion,
+                        child: const Text('Bỏ chọn'),
                       ),
                     ),
                   ],
@@ -441,12 +442,12 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                   )
                 else
                   const Text(
-                    'Chon voucher trong danh sach hoac nhap ma de ap dung ngay.',
+                    'Chọn voucher trong danh sách hoặc nhập mã để áp dụng ngay.',
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Danh sach voucher',
+                  'Danh sách ưu đãi',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -457,7 +458,8 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary),
                     ),
                   )
                 else if (_promotionLoadError != null)
@@ -475,7 +477,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                       OutlinedButton.icon(
                         onPressed: _loadPromotions,
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Tai lai voucher'),
+                        label: const Text('Tải lại voucher'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.white12),
@@ -485,7 +487,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                   )
                 else if (_promotions.isEmpty)
                   const Text(
-                    'Hien chua co voucher dang hoat dong.',
+                    'Hiện chưa có voucher đang hoạt động.',
                     style: TextStyle(color: Colors.white60),
                   )
                 else
@@ -494,8 +496,8 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _PromotionListTile(
                         promotion: promotion,
-                        selected:
-                            appliedPromotionCode == promotion.code.toUpperCase(),
+                        selected: appliedPromotionCode ==
+                            promotion.code.toUpperCase(),
                         onTap: () => _applyPromotionCode(
                           promotion.code,
                           promotion: promotion,
@@ -512,7 +514,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Combo & do an',
+                  'Combo & đồ ăn',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -522,7 +524,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                 const SizedBox(height: 12),
                 if (draft.concessions.isEmpty)
                   const Text(
-                    'Ban chua chon them combo hoac do an.',
+                    'Bạn chưa chọn thêm combo hoặc đồ ăn.',
                     style: TextStyle(color: Colors.white60),
                   )
                 else
@@ -596,7 +598,7 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tong ket don hang',
+                  'Tổng kết đơn hàng',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -605,11 +607,11 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                 ),
                 const SizedBox(height: 14),
                 _InfoRow(
-                  label: 'Tien ghe',
+                  label: 'Tiền vé',
                   value: bookingFormatCurrency(seatTotal),
                 ),
                 _InfoRow(
-                  label: 'Combo & do an',
+                  label: 'Combo & đồ ăn',
                   value: bookingFormatCurrency(concessionTotal),
                 ),
                 if (discountAmount > 0)
@@ -620,7 +622,8 @@ class _BookingReviewPageState extends State<BookingReviewPage> {
                   ),
                 const Divider(color: Colors.white12, height: 24),
                 _InfoRow(
-                  label: discountAmount > 0 ? 'Tong sau voucher' : 'Tong tam tinh',
+                  label:
+                      discountAmount > 0 ? 'Tổng sau voucher' : 'Tổng tạm tính',
                   value: bookingFormatCurrency(total),
                   highlight: true,
                 ),
@@ -711,7 +714,9 @@ class _AppliedPromotionCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  promotion?.name ?? preview.promotionName ?? preview.promotionCode,
+                  promotion?.name ??
+                      preview.promotionName ??
+                      preview.promotionCode,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -722,7 +727,7 @@ class _AppliedPromotionCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Ma ${preview.promotionCode}',
+            'Mã ${preview.promotionCode}',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 12,
@@ -730,7 +735,7 @@ class _AppliedPromotionCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Giam ${bookingFormatCurrency(preview.discountAmount)}. Tong con ${bookingFormatCurrency(preview.finalAmount)}.',
+            'Giảm ${bookingFormatCurrency(preview.discountAmount)}. Tổng còn ${bookingFormatCurrency(preview.finalAmount)}.',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -756,10 +761,10 @@ class _PromotionListTile extends StatelessWidget {
 
   String get _discountLabel {
     if (promotion.discountType == DiscountType.PERCENTAGE) {
-      return 'Giam ${promotion.discountValue.toInt()}%';
+      return 'Giảm ${promotion.discountValue.toInt()}%';
     }
     if (promotion.discountType == DiscountType.FIXED) {
-      return 'Giam ${bookingFormatCurrency(promotion.discountValue)}';
+      return 'Giảm ${bookingFormatCurrency(promotion.discountValue)}';
     }
     return 'Voucher';
   }
@@ -815,8 +820,8 @@ class _PromotionListTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     promotion.minOrderValue != null
-                        ? 'Toi thieu ${bookingFormatCurrency(promotion.minOrderValue!)}'
-                        : 'Ap dung cho don hop le',
+                        ? 'Tối thiểu ${bookingFormatCurrency(promotion.minOrderValue!)}'
+                        : 'Áp dụng cho đơn hợp lệ',
                     style: const TextStyle(
                       color: Colors.white60,
                       fontSize: 12,

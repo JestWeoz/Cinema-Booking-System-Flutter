@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
-import 'package:cinema_booking_system_app/models/enums.dart';
 import 'package:cinema_booking_system_app/models/requests/payment_requests.dart';
 import 'package:cinema_booking_system_app/models/responses/payment_response.dart';
 import 'package:cinema_booking_system_app/pages/booking/booking_flow_models.dart';
@@ -26,7 +24,6 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
   final PaymentService _paymentService = PaymentService.instance;
   PaymentResponse? _payment;
   bool _creatingPayment = false;
-  bool _checkingPayment = false;
 
   Future<void> _openVnpay() async {
     setState(() => _creatingPayment = true);
@@ -44,8 +41,8 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
       }
 
       if (!mounted) return;
-      final paymentResult = await Navigator.of(context).push<
-          BookingPaymentWebViewResult>(
+      final paymentResult =
+          await Navigator.of(context).push<BookingPaymentWebViewResult>(
         MaterialPageRoute<BookingPaymentWebViewResult>(
           builder: (_) => BookingPaymentWebViewPage(
             paymentUrl: url,
@@ -73,64 +70,6 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
     }
   }
 
-  Future<void> _checkPaymentStatus() async {
-    setState(() => _checkingPayment = true);
-    try {
-      final payment = await _paymentService.getByBooking(
-        widget.contextData.booking.bookingId,
-      );
-      if (!mounted) return;
-      setState(() => _payment = payment);
-      if (payment.status == PaymentStatus.SUCCESS) {
-        await showDialog<void>(
-          context: context,
-          builder: (_) => AlertDialog(
-            backgroundColor: AppColors.cardDark,
-            title: const Text(
-              'Thanh toan thanh cong',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: const Text(
-              'Dat ve cua ban da duoc thanh toan thanh cong. Ve se xuat hien trong muc ve cua toi.',
-              style: TextStyle(color: Colors.white70),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Dong'),
-              ),
-            ],
-          ),
-        );
-        if (!mounted) return;
-        context.go(AppRoutes.tickets);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              payment.status == PaymentStatus.PENDING
-                  ? 'Thanh toan van dang cho xu ly.'
-                  : 'Trang thai hien tai: ${payment.status?.name ?? 'UNKNOWN'}',
-            ),
-            backgroundColor: AppColors.secondary,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Khong kiem tra duoc thanh toan: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _checkingPayment = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final draft = widget.contextData.draft;
@@ -138,12 +77,12 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
     final payment = _payment;
 
     return BookingPageScaffold(
-      title: 'Thanh toan an toan',
+      title: 'Thanh toán',
       bottomNavigationBar: BookingBottomBar(
-        label: 'Tong tien',
+        label: 'Tổng tiền',
         value: bookingFormatCurrency(booking.finalPrice),
-        note: 'Buoc cuoi cung de giu cho va xuat ve.',
-        buttonText: 'Thanh toan voi VNPay',
+        note: 'Bước cuối cùng để giữ chỗ và xuất vé.',
+        buttonText: 'Thanh toán với VNPay',
         onPressed: _openVnpay,
         loading: _creatingPayment,
       ),
@@ -163,7 +102,7 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tom tat thanh toan',
+                  'Tóm tắt thanh toán',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -171,10 +110,10 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _SummaryLine(label: 'Ma booking', value: booking.bookingCode),
-                _SummaryLine(label: 'Ghe', value: draft.seatLabel),
+                _SummaryLine(label: 'Mã booking', value: booking.bookingCode),
+                _SummaryLine(label: 'Ghế', value: draft.seatLabel),
                 _SummaryLine(
-                  label: 'Tien ve',
+                  label: 'Tiền vé',
                   value: bookingFormatCurrency(booking.totalPrice),
                 ),
                 _SummaryLine(
@@ -184,7 +123,7 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
                       : '0 VND',
                 ),
                 _SummaryLine(
-                  label: 'Phai thanh toan',
+                  label: 'Phải thanh toán',
                   value: bookingFormatCurrency(booking.finalPrice),
                   highlight: true,
                 ),
@@ -197,7 +136,7 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Phuong thuc thanh toan',
+                  'Phương thức thanh toán',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -238,7 +177,7 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Mo truc tiep cong thanh toan ngay trong app, giong man embedded web.',
+                              'Mở trực tiếp cổng thanh toán ngay trong app, giống màn embedded web.',
                               style: TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
@@ -258,55 +197,6 @@ class _BookingPaymentPageState extends State<BookingPaymentPage> {
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          BookingSectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Sau khi thanh toan',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '1. Nhan nut thanh toan de mo man hinh VNPay nhung ngay trong app.\n2. Hoan tat giao dich ngay trong WebView hoac sang app ngan hang neu VNPay yeu cau.\n3. Khi giao dich tra ket qua, app se tu ve man hinh ket qua thanh toan.',
-                  style: TextStyle(color: Colors.white70, height: 1.6),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _checkingPayment ? null : _checkPaymentStatus,
-                    icon: _checkingPayment
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.secondary,
-                            ),
-                          )
-                        : const Icon(Icons.refresh),
-                    label: const Text('Kiem tra trang thai thanh toan'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.secondary,
-                      side: BorderSide(
-                        color: AppColors.secondary.withValues(alpha: 0.45),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

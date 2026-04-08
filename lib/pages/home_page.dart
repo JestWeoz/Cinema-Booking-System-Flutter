@@ -93,18 +93,64 @@ class _HomePageState extends State<HomePage> {
     List<MovieModel> nowShowing,
     List<MovieModel> comingSoon,
   ) {
-    final byId = <String, MovieModel>{};
-    for (final movie in recommended) {
-      byId[movie.id] = movie;
-    }
-
     final combined = [...nowShowing, ...comingSoon]
       ..sort((a, b) => b.rating.compareTo(a.rating));
+    final combinedById = <String, MovieModel>{};
+    for (final movie in combined) {
+      combinedById.putIfAbsent(movie.id, () => movie);
+    }
+
+    final byId = <String, MovieModel>{};
+    for (final movie in recommended) {
+      byId[movie.id] = _mergeFeaturedMovie(movie, combinedById[movie.id]);
+    }
     for (final movie in combined) {
       byId.putIfAbsent(movie.id, () => movie);
     }
 
     return byId.values.take(6).toList();
+  }
+
+  List<String> _normalizedGenres(MovieModel movie) {
+    return movie.genres
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
+  }
+
+  MovieModel _mergeFeaturedMovie(MovieModel primary, MovieModel? fallback) {
+    if (fallback == null) {
+      return primary;
+    }
+
+    final primaryGenres = _normalizedGenres(primary);
+    final fallbackGenres = _normalizedGenres(fallback);
+    final hasPrimaryBackdrop = primary.backdropUrl?.trim().isNotEmpty == true;
+    final hasFallbackBackdrop = fallback.backdropUrl?.trim().isNotEmpty == true;
+
+    return primary.copyWith(
+      overview: primary.overview.trim().isNotEmpty
+          ? primary.overview
+          : fallback.overview,
+      posterUrl: primary.posterUrl.trim().isNotEmpty
+          ? primary.posterUrl
+          : fallback.posterUrl,
+      backdropUrl: hasPrimaryBackdrop
+          ? primary.backdropUrl
+          : hasFallbackBackdrop
+              ? fallback.backdropUrl
+              : primary.backdropUrl,
+      rating: primary.rating > 0 ? primary.rating : fallback.rating,
+      durationMinutes: primary.durationMinutes > 0
+          ? primary.durationMinutes
+          : fallback.durationMinutes,
+      releaseDate: primary.releaseDate.trim().isNotEmpty
+          ? primary.releaseDate
+          : fallback.releaseDate,
+      genres: primaryGenres.isNotEmpty ? primaryGenres : fallbackGenres,
+      ageRating: primary.ageRating ?? fallback.ageRating,
+    );
   }
 
   Future<void> _loadUnreadNotificationCount() async {
@@ -155,9 +201,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _movieMeta(MovieModel movie) {
-    final genres =
-        movie.genres.where((item) => item.isNotEmpty).take(3).join(', ');
-    return genres.isEmpty ? 'Dang cap nhat' : genres;
+    final genres = _normalizedGenres(movie).take(3).join(', ');
+    return genres.isEmpty ? 'Chua phan loai' : genres;
   }
 
   String _ratingText(MovieModel movie) {
@@ -498,7 +543,7 @@ class _HorizontalMovieStrip extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 360,
+      height: 376,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: movies.length,
@@ -583,6 +628,8 @@ class _HomeMovieCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               showComingSoonDate ? _releaseText() : subtitleText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: showComingSoonDate
                     ? Colors.white70
@@ -605,7 +652,7 @@ class _HomeMovieCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               titleMeta,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
@@ -630,12 +677,13 @@ class _FeaturedMoviePoster extends StatelessWidget {
   });
 
   String _featuredTag() {
-    final genres =
-        movie.genres.where((item) => item.trim().isNotEmpty).toList();
+    final genres = movie.genres
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty);
     if (genres.isNotEmpty) {
       return genres.first;
     }
-    return 'Dang cap nhat';
+    return 'Chua phan loai';
   }
 
   @override
