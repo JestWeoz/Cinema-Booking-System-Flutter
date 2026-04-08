@@ -10,6 +10,15 @@ class PromotionService {
 
   final Dio _dio = DioClient.instance;
 
+  Map<String, dynamic> _sanitizePayload(Map<String, dynamic> data) {
+    final payload = Map<String, dynamic>.from(data);
+    final rawType = payload['discountType']?.toString().toUpperCase();
+    if (rawType == 'FIXED') {
+      payload.remove('maxDiscount');
+    }
+    return payload;
+  }
+
   List<PromotionResponse> _parseList(dynamic data) {
     if (data is List) {
       return data
@@ -103,13 +112,17 @@ class PromotionService {
 
   /// POST /promotions — Tạo khuyến mãi mới (ADMIN)
   Future<PromotionResponse> create(Map<String, dynamic> data) async {
-    final response = await _dio.post(PromotionPaths.base, data: data);
+    final response =
+        await _dio.post(PromotionPaths.base, data: _sanitizePayload(data));
     return _parse(response.data);
   }
 
   /// PUT /promotions/{id} — Cập nhật khuyến mãi (ADMIN)
   Future<PromotionResponse> update(String id, Map<String, dynamic> data) async {
-    final response = await _dio.put(PromotionPaths.byId(id), data: data);
+    final response = await _dio.put(
+      PromotionPaths.byId(id),
+      data: _sanitizePayload(data),
+    );
     return _parse(response.data);
   }
 

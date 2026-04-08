@@ -77,18 +77,6 @@ class _AdminVoucherListPageState extends State<AdminVoucherListPage> {
     _load();
   }
 
-  Future<void> _toggleActive(PromotionResponse item) async {
-    await _service.update(item.id, {'active': !item.active});
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(item.active ? 'Đã tắt voucher' : 'Đã kích hoạt voucher'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    _load();
-  }
-
   Future<void> _openForm({PromotionResponse? promotion}) async {
     final changed = await showDialog<bool>(
       context: context,
@@ -191,10 +179,11 @@ class _AdminVoucherListPageState extends State<AdminVoucherListPage> {
                                                   fontWeight: FontWeight.bold)),
                                         ),
                                         const Spacer(),
-                                        Switch(
-                                          value: v.active,
-                                          onChanged: (_) => _toggleActive(v),
-                                          activeThumbColor: AppColors.success,
+                                        _pill(
+                                          v.active ? 'Đang bật' : 'Đang tắt',
+                                          v.active
+                                              ? AppColors.success
+                                              : Colors.white70,
                                         ),
                                       ],
                                     ),
@@ -493,13 +482,16 @@ class _PromotionFormDialogState extends State<_PromotionFormDialog> {
       'discountType': _discountType.name,
       'discountValue': double.parse(_discountValue.text.trim()),
       'minOrderValue': _toDouble(_minOrderValue),
-      'maxDiscount': _isPercentage ? _toDouble(_maxDiscount) : null,
       'quantity': quantity,
       'maxUsagePerUser': maxUsagePerUser,
       'startDate': _startDate?.toIso8601String(),
       'endDate': _endDate?.toIso8601String(),
       'active': _active,
     };
+    final maxDiscount = _toDouble(_maxDiscount);
+    if (_isPercentage && maxDiscount != null) {
+      payload['maxDiscount'] = maxDiscount;
+    }
     try {
       if (widget.promotion == null) {
         await widget.service.create(payload);
@@ -670,17 +662,6 @@ class _PromotionFormDialogState extends State<_PromotionFormDialog> {
                           () => _pickDate(start: false))),
                 ]),
                 const SizedBox(height: 12),
-                SwitchListTile(
-                  value: _active,
-                  onChanged: (value) => setState(() => _active = value),
-                  title: const Text('Đang hoạt động',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                    'Có thể tắt để chuẩn bị trước, rồi kích hoạt sau.',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                ),
                 const Divider(color: AppColors.dividerDark),
                 const Align(
                   alignment: Alignment.centerLeft,

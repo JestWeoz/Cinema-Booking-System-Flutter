@@ -30,31 +30,64 @@ class AppDialogForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.of(context).size.height * 0.82;
     final content = scrollable ? SingleChildScrollView(child: child) : child;
-    return AlertDialog(
+
+    return Dialog(
       backgroundColor: AppColors.cardDark,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 560,
+          maxHeight: maxHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                fit: FlexFit.loose,
+                child: content,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  TextButton(
+                    onPressed:
+                        isLoading ? null : onCancel ?? () => _close(context),
+                    child: const Text('Huy'),
+                  ),
+                  ElevatedButton(
+                    onPressed: isLoading ? null : onSubmit,
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(submitLabel),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
-      content: content,
-      actions: [
-        TextButton(
-          onPressed: isLoading ? null : onCancel ?? () => _close(context),
-          child: const Text('Huy'),
-        ),
-        ElevatedButton(
-          onPressed: isLoading ? null : onSubmit,
-          child: isLoading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(submitLabel),
-        ),
-      ],
     );
   }
 }
