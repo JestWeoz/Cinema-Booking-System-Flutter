@@ -3,6 +3,25 @@ import 'package:cinema_booking_system_app/core/theme/app_colors.dart';
 import 'package:cinema_booking_system_app/services/room_seat_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/admin/app_dialog_form.dart';
 
+String _seatTypeDisplayName(String? seatTypeName) {
+  final normalized = (seatTypeName ?? '').trim().toLowerCase();
+  if (normalized.contains('vip')) return 'Ghế VIP';
+  if (normalized.contains('couple') ||
+      normalized.contains('double') ||
+      normalized.contains('doi') ||
+      normalized.contains('đôi')) {
+    return 'Ghế đôi';
+  }
+  if (normalized.contains('standard') || normalized.contains('thuong')) {
+    return 'Ghế thường';
+  }
+  final fallback = seatTypeName?.trim();
+  if (fallback == null || fallback.isEmpty) {
+    return 'Không rõ';
+  }
+  return fallback;
+}
+
 class SeatFormPayload {
   final String seatRow;
   final int seatNumber;
@@ -104,7 +123,7 @@ Future<SeatFormPayload?> showSeatFormDialog(
                     .map(
                       (type) => DropdownMenuItem(
                         value: type,
-                        child: Text(type.name),
+                        child: Text(_seatTypeDisplayName(type.name)),
                       ),
                     )
                     .toList(),
@@ -120,7 +139,8 @@ Future<SeatFormPayload?> showSeatFormDialog(
                   value: active,
                   onChanged: (value) => setDialogState(() => active = value),
                   activeThumbColor: AppColors.success,
-                  title: const Text('Ghe dang hoat dong', style: TextStyle(color: Colors.white)),
+                  title: const Text('Ghe dang hoat dong',
+                      style: TextStyle(color: Colors.white)),
                   contentPadding: EdgeInsets.zero,
                 ),
               ],
@@ -208,11 +228,14 @@ Future<SeatBulkPayload?> showSeatBulkDialog(
                         final from = int.tryParse(fromController.text);
                         final to = int.tryParse(value ?? '');
                         if (to == null) return 'Nhap so hop le';
-                        if (from != null && to < from) return 'Phai >= so bat dau';
+                        if (from != null && to < from) {
+                          return 'Phai >= so bat dau';
+                        }
                         return null;
                       },
                       style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(labelText: 'Den so ghe'),
+                      decoration:
+                          const InputDecoration(labelText: 'Den so ghe'),
                     ),
                   ),
                 ],
@@ -228,7 +251,7 @@ Future<SeatBulkPayload?> showSeatBulkDialog(
                     .map(
                       (type) => DropdownMenuItem(
                         value: type,
-                        child: Text(type.name),
+                        child: Text(_seatTypeDisplayName(type.name)),
                       ),
                     )
                     .toList(),

@@ -42,6 +42,7 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
   int _totalPages = 0;
   int _totalElements = 0;
   String? _keyword;
+  bool _usingLocalKeywordFallback = false;
   String? _movieId;
   String? _cinemaId;
   String? _roomId;
@@ -119,10 +120,104 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
     }
   }
 
+  String _normalizeForSearch(String value) {
+    final lower = value.toLowerCase().trim();
+    return lower
+        .replaceAll('à', 'a')
+        .replaceAll('á', 'a')
+        .replaceAll('ạ', 'a')
+        .replaceAll('ả', 'a')
+        .replaceAll('ã', 'a')
+        .replaceAll('â', 'a')
+        .replaceAll('ầ', 'a')
+        .replaceAll('ấ', 'a')
+        .replaceAll('ậ', 'a')
+        .replaceAll('ẩ', 'a')
+        .replaceAll('ẫ', 'a')
+        .replaceAll('ă', 'a')
+        .replaceAll('ằ', 'a')
+        .replaceAll('ắ', 'a')
+        .replaceAll('ặ', 'a')
+        .replaceAll('ẳ', 'a')
+        .replaceAll('ẵ', 'a')
+        .replaceAll('è', 'e')
+        .replaceAll('é', 'e')
+        .replaceAll('ẹ', 'e')
+        .replaceAll('ẻ', 'e')
+        .replaceAll('ẽ', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('ề', 'e')
+        .replaceAll('ế', 'e')
+        .replaceAll('ệ', 'e')
+        .replaceAll('ể', 'e')
+        .replaceAll('ễ', 'e')
+        .replaceAll('ì', 'i')
+        .replaceAll('í', 'i')
+        .replaceAll('ị', 'i')
+        .replaceAll('ỉ', 'i')
+        .replaceAll('ĩ', 'i')
+        .replaceAll('ò', 'o')
+        .replaceAll('ó', 'o')
+        .replaceAll('ọ', 'o')
+        .replaceAll('ỏ', 'o')
+        .replaceAll('õ', 'o')
+        .replaceAll('ô', 'o')
+        .replaceAll('ồ', 'o')
+        .replaceAll('ố', 'o')
+        .replaceAll('ộ', 'o')
+        .replaceAll('ổ', 'o')
+        .replaceAll('ỗ', 'o')
+        .replaceAll('ơ', 'o')
+        .replaceAll('ờ', 'o')
+        .replaceAll('ớ', 'o')
+        .replaceAll('ợ', 'o')
+        .replaceAll('ở', 'o')
+        .replaceAll('ỡ', 'o')
+        .replaceAll('ù', 'u')
+        .replaceAll('ú', 'u')
+        .replaceAll('ụ', 'u')
+        .replaceAll('ủ', 'u')
+        .replaceAll('ũ', 'u')
+        .replaceAll('ư', 'u')
+        .replaceAll('ừ', 'u')
+        .replaceAll('ứ', 'u')
+        .replaceAll('ự', 'u')
+        .replaceAll('ử', 'u')
+        .replaceAll('ữ', 'u')
+        .replaceAll('ỳ', 'y')
+        .replaceAll('ý', 'y')
+        .replaceAll('ỵ', 'y')
+        .replaceAll('ỷ', 'y')
+        .replaceAll('ỹ', 'y')
+        .replaceAll('đ', 'd');
+  }
+
+  List<ShowtimeSummaryResponse> _filterLocalByKeyword(
+    List<ShowtimeSummaryResponse> items,
+    String keyword,
+  ) {
+    final normalizedKeyword = _normalizeForSearch(keyword);
+    if (normalizedKeyword.isEmpty) {
+      return items;
+    }
+    return items.where((item) {
+      final haystack = _normalizeForSearch(
+        '${item.movieTitle} ${item.cinemaName} ${item.roomName} '
+        '${languageLabel(item.language)} ${showTimeStatusLabel(item.status)} '
+        '${_formatDateTime(item.startTime)}',
+      );
+      return haystack.contains(normalizedKeyword);
+    }).toList();
+  }
+
   Future<void> _load() async {
+    final keyword = _keyword?.trim();
+    final hasKeyword = keyword != null && keyword.isNotEmpty;
+    final safeKeyword = hasKeyword ? keyword : null;
     setState(() {
       _loading = true;
       _error = null;
+      _usingLocalKeywordFallback = false;
     });
     try {
       final response = await _showtimeService.getPaginated(
@@ -133,7 +228,7 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
           date: _date == null ? null : DateFormat('yyyy-MM-dd').format(_date!),
           language: _language,
           status: _status,
-          keyword: _keyword,
+          keyword: safeKeyword,
           page: _page,
           size: _size,
         ),
@@ -146,9 +241,43 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
         _loading = false;
       });
     } catch (error) {
+      if (safeKeyword != null) {
+        try {
+          final fallbackResponse = await _showtimeService.getPaginated(
+            filter: ShowtimeFilterRequest(
+              movieId: _movieId,
+              cinemaId: _cinemaId,
+              roomId: _roomId,
+              date: _date == null
+                  ? null
+                  : DateFormat('yyyy-MM-dd').format(_date!),
+              language: _language,
+              status: _status,
+              page: 1,
+              size: 200,
+            ),
+          );
+          final filtered =
+              _filterLocalByKeyword(fallbackResponse.content, safeKeyword);
+          if (!mounted) return;
+          setState(() {
+            _page = 1;
+            _items = filtered;
+            _totalPages = 1;
+            _totalElements = filtered.length;
+            _loading = false;
+            _error = null;
+            _usingLocalKeywordFallback = true;
+          });
+          return;
+        } catch (_) {
+          // Ignore fallback error and keep original error below.
+        }
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
+        _usingLocalKeywordFallback = false;
         _error = 'Khong tai duoc danh sach suat chieu: $error';
       });
     }
@@ -176,7 +305,8 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
     final confirmed = await ConfirmDialog.show(
       context,
       title: 'Huy suat chieu',
-      message: 'Huy "${item.movieTitle}" luc ${_formatDateTime(item.startTime)}?',
+      message:
+          'Huy "${item.movieTitle}" luc ${_formatDateTime(item.startTime)}?',
       confirmLabel: 'Huy suat',
       destructive: true,
     );
@@ -249,7 +379,8 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
             Future<void> loadRoomsInDialog(String cinemaId) async {
               setDialogState(() => tmpLoadingRooms = true);
               try {
-                final rooms = await _roomService.getByCinema(cinemaId, size: 100);
+                final rooms =
+                    await _roomService.getByCinema(cinemaId, size: 100);
                 setDialogState(() {
                   tmpRooms = rooms;
                   final stillExists = tmpRooms.any((r) => r.id == tmpRoomId);
@@ -291,7 +422,8 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
                   labelText: label,
-                  labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                  labelStyle:
+                      const TextStyle(color: Colors.white54, fontSize: 13),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   filled: true,
@@ -865,6 +997,15 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                   '$_totalElements suat chieu',
                   style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
+                if (_usingLocalKeywordFallback)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Text(
+                      '(loc cuc bo)',
+                      style:
+                          TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                    ),
+                  ),
                 const Spacer(),
                 if (_loadingLookups)
                   const SizedBox(
@@ -911,8 +1052,7 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                   color: AppColors.cardDark,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.08),
+                                    color: Colors.white.withValues(alpha: 0.08),
                                   ),
                                 ),
                                 child: Padding(
@@ -985,8 +1125,8 @@ class _AdminShowtimeListPageState extends State<AdminShowtimeListPage> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: statusColor
-                                                  .withValues(alpha: 0.14),
+                                              color: statusColor.withValues(
+                                                  alpha: 0.14),
                                               borderRadius:
                                                   BorderRadius.circular(999),
                                             ),

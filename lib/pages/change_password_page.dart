@@ -47,13 +47,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Doi mat khau thanh cong')),
+        const SnackBar(content: Text('Đổi mật khẩu thanh cong')),
       );
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Khong the doi mat khau')),
+        const SnackBar(content: Text('Khong the Đổi mật khẩu')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -63,7 +63,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Doi mat khau')),
+      appBar: AppBar(title: const Text('Đổi mật khẩu')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(

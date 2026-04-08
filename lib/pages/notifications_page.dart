@@ -86,15 +86,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
       setState(() {
         _loading = false;
         _requiresLogin = statusCode == 401 || statusCode == 403;
-        _error = _requiresLogin
-            ? null
-            : 'Khong tai duoc thong bao: ${message ?? e}';
+        _error =
+            _requiresLogin ? null : 'Khong tai duoc Thông báo: ${message ?? e}';
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Khong tai duoc thong bao: $e';
+        _error = 'Khong tai duoc Thông báo: $e';
       });
     }
   }
@@ -136,7 +135,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Khong cap nhat duoc thong bao: ${message ?? e}'),
+          content: Text('Khong cap nhat duoc Thông báo: ${message ?? e}'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -144,7 +143,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Khong cap nhat duoc thong bao: $e'),
+          content: Text('Khong cap nhat duoc Thông báo: $e'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -242,7 +241,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
               const SizedBox(height: 18),
               Text(
-                current.body.isEmpty ? 'Thong bao khong co noi dung.' : current.body,
+                current.body.isEmpty
+                    ? 'Thông báo khong co noi dung.'
+                    : current.body,
                 style: const TextStyle(
                   color: Colors.white70,
                   height: 1.5,
@@ -284,13 +285,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        title: Text(_unreadCount > 0 ? 'Thong bao ($_unreadCount)' : 'Thong bao'),
+        title:
+            Text(_unreadCount > 0 ? 'Thông báo ($_unreadCount)' : 'Thông báo'),
         actions: [
           if (!_requiresLogin)
             TextButton.icon(
-              onPressed: _unreadCount == 0 || _markingAllRead
-                  ? null
-                  : _markAllAsRead,
+              onPressed:
+                  _unreadCount == 0 || _markingAllRead ? null : _markAllAsRead,
               icon: _markingAllRead
                   ? const SizedBox(
                       width: 14,
@@ -329,7 +330,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Ban can dang nhap de xem thong bao tu backend.',
+            'Ban can dang nhap de xem Thông báo tu backend.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70, fontSize: 15),
           ),
@@ -388,7 +389,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
           SizedBox(height: 16),
           Text(
-            'Chua co thong bao moi',
+            'Chua co Thông báo moi',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white60),
           ),
@@ -420,8 +421,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 Expanded(
                   child: Text(
                     _unreadCount > 0
-                        ? 'Ban con $_unreadCount thong bao chua doc.'
-                        : 'Tat ca thong bao da duoc doc.',
+                        ? 'Ban con $_unreadCount Thông báo chua doc.'
+                        : 'Tat ca Thông báo da duoc doc.',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -472,7 +473,9 @@ class _NotificationCard extends StatelessWidget {
                 : AppColors.surfaceDark,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: unread ? AppColors.primary.withValues(alpha: 0.28) : Colors.white10,
+              color: unread
+                  ? AppColors.primary.withValues(alpha: 0.28)
+                  : Colors.white10,
             ),
           ),
           child: Row(
@@ -493,7 +496,8 @@ class _NotificationCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight:
+                                  unread ? FontWeight.w700 : FontWeight.w600,
                               fontSize: 15,
                             ),
                           ),
@@ -513,7 +517,7 @@ class _NotificationCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       notification.body.isEmpty
-                          ? 'Thong bao khong co noi dung.'
+                          ? 'Thông báo khong co noi dung.'
                           : notification.body,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
@@ -536,7 +540,9 @@ class _NotificationCard extends StatelessWidget {
                         Text(
                           unread ? 'Moi' : 'Da doc',
                           style: TextStyle(
-                            color: unread ? AppColors.primaryLight : Colors.white38,
+                            color: unread
+                                ? AppColors.primaryLight
+                                : Colors.white38,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -580,20 +586,27 @@ class _NotificationTypeAvatar extends StatelessWidget {
   static _NotificationTypeStyle _styleFor(NotificationType? type) {
     switch (type) {
       case NotificationType.BOOKING:
-        return const _NotificationTypeStyle(Icons.confirmation_num_outlined, AppColors.secondary);
+        return const _NotificationTypeStyle(
+            Icons.confirmation_num_outlined, AppColors.secondary);
       case NotificationType.PAYMENT:
-        return const _NotificationTypeStyle(Icons.payments_outlined, AppColors.success);
+        return const _NotificationTypeStyle(
+            Icons.payments_outlined, AppColors.success);
       case NotificationType.REMINDER:
-        return const _NotificationTypeStyle(Icons.alarm_outlined, AppColors.info);
+        return const _NotificationTypeStyle(
+            Icons.alarm_outlined, AppColors.info);
       case NotificationType.PROMOTION:
-        return const _NotificationTypeStyle(Icons.local_offer_outlined, AppColors.primaryLight);
+        return const _NotificationTypeStyle(
+            Icons.local_offer_outlined, AppColors.primaryLight);
       case NotificationType.CANCELLATION:
-        return const _NotificationTypeStyle(Icons.event_busy_outlined, AppColors.error);
+        return const _NotificationTypeStyle(
+            Icons.event_busy_outlined, AppColors.error);
       case NotificationType.REVIEW:
-        return const _NotificationTypeStyle(Icons.rate_review_outlined, AppColors.secondary);
+        return const _NotificationTypeStyle(
+            Icons.rate_review_outlined, AppColors.secondary);
       case NotificationType.SYSTEM:
       default:
-        return const _NotificationTypeStyle(Icons.notifications_outlined, Colors.white70);
+        return const _NotificationTypeStyle(
+            Icons.notifications_outlined, Colors.white70);
     }
   }
 }

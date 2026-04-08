@@ -18,6 +18,7 @@ class SeatHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displaySeatTypes = _buildDisplaySeatTypes(seatTypes);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -73,11 +74,11 @@ class SeatHeader extends StatelessWidget {
                   icon: Icons.event_seat_outlined,
                   text: '$seatCount ghế',
                   color: AppColors.primary),
-              ...seatTypes.map(
+              ...displaySeatTypes.map(
                 (type) => _SeatPill(
                   icon: Icons.sell_outlined,
                   text:
-                      '${type.name} (${type.priceModifier >= 0 ? '+' : ''}${type.priceModifier.toStringAsFixed(0)})',
+                      '${_seatTypeLabel(type.name)} (${type.priceModifier >= 0 ? '+' : ''}${type.priceModifier.toStringAsFixed(0)})',
                   color: _seatTypeAccent(type.name),
                 ),
               ),
@@ -132,7 +133,8 @@ class SeatMapBoard extends StatelessWidget {
     final rows = _rows;
     final seatNumbers = _seatNumbers;
     final seatLookup = _seatLookup;
-    final mapWidth = (seatNumbers.length * 60) + 88;
+    final displaySeatTypes = _buildDisplaySeatTypes(seatTypes);
+    final mapWidth = (seatNumbers.length * 48) + 76;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -162,7 +164,7 @@ class SeatMapBoard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Seat Map',
+                      'Sơ đồ ghế',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
@@ -274,14 +276,16 @@ class SeatMapBoard extends StatelessWidget {
                 borderColor: Color(0xFF9CA3AF),
                 textColor: Colors.white70,
               ),
-              ...seatTypes.map(
-                (type) => _SeatLegendItem(
-                  label: type.name,
-                  fillColor: _seatFillColor(type.name),
-                  borderColor: _seatBorderColor(type.name),
-                  textColor: _seatTextColor(type.name),
-                ),
-              ),
+              ...displaySeatTypes
+                  .where((type) => _seatTypeKey(type.name) == 'other')
+                  .map(
+                    (type) => _SeatLegendItem(
+                      label: _seatTypeLabel(type.name),
+                      fillColor: _seatFillColor(type.name),
+                      borderColor: _seatBorderColor(type.name),
+                      textColor: _seatTextColor(type.name),
+                    ),
+                  ),
             ],
           ),
         ],
@@ -443,23 +447,23 @@ class _SeatNumberHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const SizedBox(width: 44),
+        const SizedBox(width: 38),
         ...numbers.map(
           (number) => SizedBox(
-            width: 56,
+            width: 46,
             child: Center(
               child: Text(
                 number.toString(),
                 style: const TextStyle(
                   color: Colors.white38,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 44),
+        const SizedBox(width: 38),
       ],
     );
   }
@@ -485,9 +489,9 @@ class _SeatGridRow extends StatelessWidget {
         _RowBadge(label: rowLabel),
         ...seatNumbers.map(
           (seatNumber) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: rowSeats[seatNumber] == null
-                ? const SizedBox(width: 50, height: 50)
+                ? const SizedBox(width: 42, height: 42)
                 : _SeatMapCell(
                     seat: rowSeats[seatNumber]!,
                     onTap: () => onTapSeat(rowSeats[seatNumber]!),
@@ -508,14 +512,14 @@ class _RowBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44,
+      width: 38,
       child: Center(
         child: Container(
-          width: 30,
-          height: 30,
+          width: 26,
+          height: 26,
           decoration: BoxDecoration(
             color: const Color(0xFF221A31),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white10),
           ),
           child: Center(
@@ -524,7 +528,7 @@ class _RowBadge extends StatelessWidget {
               style: const TextStyle(
                 color: Color(0xFFB996FF),
                 fontWeight: FontWeight.w800,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
           ),
@@ -557,17 +561,17 @@ class _SeatMapCell extends StatelessWidget {
 
     return Tooltip(
       message:
-          '${seat.seatRow}${seat.seatNumber} • ${seat.seatTypeName ?? 'Không rõ'} • ${seat.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}',
+          '${seat.seatRow}${seat.seatNumber} • ${_seatTypeLabel(seat.seatTypeName)} • ${seat.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 50,
-          height: 50,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
             color: fillColor,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor, width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -583,7 +587,7 @@ class _SeatMapCell extends StatelessWidget {
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w700,
-                fontSize: 11,
+                fontSize: 10,
               ),
             ),
           ),
@@ -639,6 +643,55 @@ class _SeatLegendItem extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+List<SeatTypeResponse> _buildDisplaySeatTypes(
+    List<SeatTypeResponse> seatTypes) {
+  final byKey = <String, SeatTypeResponse>{};
+  for (final type in seatTypes) {
+    byKey.putIfAbsent(_seatTypeLegendKey(type.name), () => type);
+  }
+  return byKey.values.toList();
+}
+
+String _seatTypeLegendKey(String? seatTypeName) {
+  final key = _seatTypeKey(seatTypeName);
+  if (key != 'other') {
+    return key;
+  }
+  return (seatTypeName ?? '').trim().toLowerCase();
+}
+
+String _seatTypeKey(String? seatTypeName) {
+  final normalized = (seatTypeName ?? '').trim().toLowerCase();
+  if (normalized.contains('vip')) return 'vip';
+  if (normalized.contains('couple') ||
+      normalized.contains('double') ||
+      normalized.contains('doi') ||
+      normalized.contains('đôi')) {
+    return 'couple';
+  }
+  if (normalized.contains('standard') || normalized.contains('thuong')) {
+    return 'standard';
+  }
+  return 'other';
+}
+
+String _seatTypeLabel(String? seatTypeName) {
+  switch (_seatTypeKey(seatTypeName)) {
+    case 'standard':
+      return 'Ghế thường';
+    case 'vip':
+      return 'Ghế VIP';
+    case 'couple':
+      return 'Ghế đôi';
+    default:
+      final fallback = seatTypeName?.trim();
+      if (fallback == null || fallback.isEmpty) {
+        return 'Không rõ';
+      }
+      return fallback;
   }
 }
 

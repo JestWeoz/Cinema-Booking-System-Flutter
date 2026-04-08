@@ -105,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thong tin ca nhan'),
+        title: const Text('Thông tin cá nhân'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -177,9 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         : 'Nhan vao anh de thay doi',
                     style: TextStyle(
                       fontSize: 11,
-                      color: _avatarUploading
-                          ? AppColors.primary
-                          : Colors.grey,
+                      color: _avatarUploading ? AppColors.primary : Colors.grey,
                     ),
                   ),
                 ),
@@ -202,17 +200,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 32),
                 _MenuItem(
                   icon: Icons.person_outline,
-                  label: 'Chinh sua thong tin',
+                  label: 'Chỉnh sửa thông tin',
                   onTap: _openEditProfile,
                 ),
                 _MenuItem(
                   icon: Icons.lock_outline,
-                  label: 'Doi mat khau',
+                  label: 'Đổi mật khẩu',
                   onTap: () => context.pushNamed('changePassword'),
                 ),
                 _MenuItem(
                   icon: Icons.notifications_outlined,
-                  label: 'Thong bao',
+                  label: 'Thông báo',
                   badgeText: _unreadNotificationCount > 0
                       ? (_unreadNotificationCount > 99
                           ? '99+'
@@ -222,7 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 _MenuItem(
                   icon: Icons.help_outline,
-                  label: 'Tro giup & Ho tro',
+                  label: 'Trợ giúp & hỗ trợ',
                   onTap: () => _showInfo(
                     context,
                     'Lien he ho tro',
@@ -231,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 _MenuItem(
                   icon: Icons.info_outline,
-                  label: 'Thong tin ung dung',
+                  label: 'Thông tin ứng dụng',
                   onTap: () => _showInfo(
                     context,
                     'Cinema Booking',
@@ -240,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: 'Dang xuat',
+                  label: 'Đăng xuất',
                   isOutlined: true,
                   onPressed: _logout,
                 ),

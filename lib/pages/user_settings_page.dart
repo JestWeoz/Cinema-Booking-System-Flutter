@@ -26,7 +26,7 @@ class UserSettingsPage extends StatelessWidget {
             const Text('Tai khoan'),
             const SizedBox(height: 12),
             AppButton(
-              label: 'Dang xuat',
+              label: 'Đăng xuất',
               isOutlined: true,
               onPressed: () => _logout(context),
             ),

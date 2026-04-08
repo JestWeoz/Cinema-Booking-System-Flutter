@@ -178,6 +178,37 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: AppColors.surfaceDark,
+              onSurface: Colors.white,
+            ),
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: AppColors.surfaceDark,
+              hourMinuteColor: AppColors.cardDark,
+              hourMinuteTextColor: Colors.white,
+              dayPeriodColor: AppColors.cardDark,
+              dayPeriodTextColor: Colors.white,
+              dialBackgroundColor: AppColors.cardDark,
+              dialHandColor: AppColors.primary,
+              dialTextColor: Colors.white,
+              entryModeIconColor: Colors.white70,
+              helpTextStyle: TextStyle(color: Colors.white70),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
     if (picked == null) return;
 
@@ -347,7 +378,8 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
               (time) => CreateShowtimeRequest(
                 movieId: _selectedMovie!.id,
                 roomId: _selectedRoom!.id,
-                startTime: _combineDateTime(_selectedDate!, time).toIso8601String(),
+                startTime:
+                    _combineDateTime(_selectedDate!, time).toIso8601String(),
                 basePrice: basePrice,
                 language: _language.name,
               ),
@@ -392,7 +424,8 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           widget.isEdit ? 'Chinh sua suat chieu' : 'Tao suat chieu',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -457,7 +490,8 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
                         .map(
                           (cinema) => DropdownMenuItem<CinemaResponse>(
                             value: cinema,
-                            child: Text(cinema.name, overflow: TextOverflow.ellipsis),
+                            child: Text(cinema.name,
+                                overflow: TextOverflow.ellipsis),
                           ),
                         )
                         .toList(),
@@ -543,15 +577,37 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
                                   children: _startTimes
                                       .map(
                                         (time) => InputChip(
-                                          label: Text(time.format(context)),
-                                          onDeleted: widget.isEdit && _startTimes.length == 1
+                                          label: Text(
+                                            time.format(context),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          labelStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          backgroundColor:
+                                              AppColors.surfaceDark,
+                                          selectedColor: AppColors.surfaceDark,
+                                          disabledColor: AppColors.surfaceDark,
+                                          deleteIconColor: Colors.white70,
+                                          side: BorderSide(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.14),
+                                          ),
+                                          onDeleted: widget.isEdit &&
+                                                  _startTimes.length == 1
                                               ? null
                                               : () {
                                                   setState(() {
                                                     _startTimes.removeWhere(
                                                       (item) =>
-                                                          item.hour == time.hour &&
-                                                          item.minute == time.minute,
+                                                          item.hour ==
+                                                              time.hour &&
+                                                          item.minute ==
+                                                              time.minute,
                                                     );
                                                   });
                                                 },
@@ -569,7 +625,9 @@ class _AdminShowtimeFormPageState extends State<AdminShowtimeFormPage> {
                         child: ElevatedButton.icon(
                           onPressed: _addTime,
                           icon: const Icon(Icons.schedule_outlined),
-                          label: Text(widget.isEdit || !_bulkMode ? 'Chon gio' : 'Them gio'),
+                          label: Text(widget.isEdit || !_bulkMode
+                              ? 'Chon gio'
+                              : 'Them gio'),
                         ),
                       ),
                     ],

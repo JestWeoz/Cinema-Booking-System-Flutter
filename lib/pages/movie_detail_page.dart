@@ -559,7 +559,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     _showMessage(
       reviewId == null
           ? 'Da dang danh gia thanh cong.'
-          : 'Da cap nhat danh gia.',
+          : 'Da Cập nhật đánh giá.',
       backgroundColor: AppColors.success,
     );
   }
@@ -601,9 +601,9 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ReviewComposerSheet(
-        title: existingReview == null ? 'Viet danh gia' : 'Sua danh gia',
+        title: existingReview == null ? 'Viet danh gia' : 'Sửa đánh giá',
         submitLabel:
-            existingReview == null ? 'Dang danh gia' : 'Cap nhat danh gia',
+            existingReview == null ? 'Dang danh gia' : 'Cập nhật đánh giá',
         initialRating: existingReview?.rating ?? 0,
         initialComment: existingReview?.comment ?? '',
         onSubmit: (rating, comment) => _submitReview(
@@ -631,8 +631,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => _ReviewComposerSheet(
-          title: 'Sua danh gia',
-          submitLabel: 'Cap nhat danh gia',
+          title: 'Sửa đánh giá',
+          submitLabel: 'Cập nhật đánh giá',
           initialRating: detail.rating,
           initialComment: detail.comment,
           onSubmit: (rating, comment) => _submitReview(
@@ -1185,7 +1185,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 ),
               ),
               TextButton(
-                onPressed: _aiReviewSummaryLoading ? null : _refreshAiReviewSummary,
+                onPressed:
+                    _aiReviewSummaryLoading ? null : _refreshAiReviewSummary,
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   minimumSize: const Size(0, 28),
@@ -1260,7 +1261,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     final myReview = _findMyReviewSummary();
 
     return _SectionCard(
-      title: 'Binh luan khan gia',
+      title: 'Bình luận khán giả',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1270,8 +1271,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               Expanded(
                 child: Text(
                   _reviews.isEmpty
-                      ? 'Chua co binh luan nao. Hay la nguoi dau tien danh gia phim nay.'
-                      : 'Cac nhan xet duoc hien thi tu danh gia thuc te cua khan gia.',
+                      ? 'Chưa có bình luận nào. Hãy là người đầu tiên đánh giá phim này.'
+                      : 'Các nhận xét được hiển thị từ đánh giá thực tế của khán giả.',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -1288,7 +1289,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  myReview == null ? 'Viet danh gia' : 'Sua danh gia',
+                  myReview == null ? 'Viết đánh giá' : 'Sửa đánh giá',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -1311,7 +1312,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Text(
-                'Dang nhap de viet review va xem y kien cua ban hien ngay trong danh sach nay.',
+                'Đăng nhập để viết review và xem ý kiến của bạn hiện ngay trong danh sách này.',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -1977,11 +1978,11 @@ class _ReviewComposerSheetState extends State<_ReviewComposerSheet> {
   Future<void> _submit() async {
     final comment = _commentController.text.trim();
     if (_selectedRating < 1 || _selectedRating > 10) {
-      setState(() => _error = 'Vui long chon so diem tu 1 den 10.');
+      setState(() => _error = 'Vui lòng chọn số điểm từ 1 đến 10.');
       return;
     }
     if (comment.isEmpty) {
-      setState(() => _error = 'Vui long nhap noi dung danh gia.');
+      setState(() => _error = 'Vui lòng nhập nội dung đánh giá.');
       return;
     }
 
@@ -2076,7 +2077,7 @@ class _ReviewComposerSheetState extends State<_ReviewComposerSheet> {
                 maxLines: 6,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Noi dung cam nhan cua ban ve bo phim...',
+                  hintText: 'Nội dung cảm nhận của bạn về bộ phim...',
                   hintStyle: const TextStyle(color: Colors.white38),
                   filled: true,
                   fillColor: AppColors.cardDark,
@@ -2111,7 +2112,7 @@ class _ReviewComposerSheetState extends State<_ReviewComposerSheet> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Huy'),
+                      child: const Text('Hủy'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2269,7 +2270,7 @@ class _ReviewDetailSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               const Text(
-                'Noi dung danh gia',
+                'Nội dung đánh giá',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -2279,7 +2280,7 @@ class _ReviewDetailSheet extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 review.comment.trim().isEmpty
-                    ? 'Nguoi dung chua de lai noi dung.'
+                    ? 'Người dùng chưa để lại nội dung.'
                     : review.comment.trim(),
                 style: const TextStyle(
                   color: Colors.white70,
@@ -2292,7 +2293,7 @@ class _ReviewDetailSheet extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Dong'),
+                  child: const Text('Đóng'),
                 ),
               ),
             ],

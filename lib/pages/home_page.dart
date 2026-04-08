@@ -333,7 +333,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                         _HomeSectionHeader(
                           title: 'Phim đang chiếu',
-                          actionLabel: 'Xem tat ca',
+                          actionLabel: 'Xem tất cả',
                           onAction: () => context.push(
                             AppRoutes.movieCatalogBySection('now-showing'),
                           ),
@@ -348,7 +348,7 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 28),
                         _HomeSectionHeader(
                           title: 'Phim sắp chiếu',
-                          actionLabel: 'Xem tat ca',
+                          actionLabel: 'Xem tất cả',
                           onAction: () => context.push(
                             AppRoutes.movieCatalogBySection('coming-soon'),
                           ),
@@ -540,7 +540,7 @@ class _HomeMovieCard extends StatelessWidget {
     }
     final day = parsed.day.toString().padLeft(2, '0');
     final month = parsed.month.toString().padLeft(2, '0');
-    return 'Khoi chieu $day/$month';
+    return 'Khởi chiếu $day/$month';
   }
 
   @override
