@@ -33,7 +33,7 @@ class _MovieCatalogPageState extends State<MovieCatalogPage> {
 
   bool get _isComingSoon => widget.section == 'coming-soon';
 
-  String get _title => _isComingSoon ? 'Phim sap chieu' : 'Phim dang chieu';
+  String get _title => _isComingSoon ? 'Phim sắp chiếu' : 'Phim đang chiếu';
 
   @override
   void initState() {

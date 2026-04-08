@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
                     delegate: SliverChildListDelegate(
                       [
                         if (featured.isNotEmpty) ...[
-                          const _HomeSectionHeader(title: 'Phim noi bat'),
+                          const _HomeSectionHeader(title: 'Phim nổi bật'),
                           const SizedBox(height: 16),
                           SizedBox(
                             height: 446,
@@ -332,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ],
                         _HomeSectionHeader(
-                          title: 'Phim dang chieu',
+                          title: 'Phim đang chiếu',
                           actionLabel: 'Xem tat ca',
                           onAction: () => context.push(
                             AppRoutes.movieCatalogBySection('now-showing'),
@@ -347,7 +347,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 28),
                         _HomeSectionHeader(
-                          title: 'Phim sap chieu',
+                          title: 'Phim sắp chiếu',
                           actionLabel: 'Xem tat ca',
                           onAction: () => context.push(
                             AppRoutes.movieCatalogBySection('coming-soon'),
@@ -399,7 +399,7 @@ class _HomeHeroHeader extends StatelessWidget {
             children: [
               const Expanded(
                 child: Text(
-                  'Mua ve xem phim',
+                  'Mua vé xem phim',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -828,7 +828,7 @@ class _FakeSearchField extends StatelessWidget {
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Tim ten phim',
+                'Tìm tên phim',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.white54, fontSize: 18),
               ),

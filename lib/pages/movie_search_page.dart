@@ -177,7 +177,7 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
                         style: const TextStyle(color: Colors.white),
                         textInputAction: TextInputAction.search,
                         decoration: InputDecoration(
-                          hintText: 'Tim ten phim',
+                          hintText: 'Tìm tên phim',
                           hintStyle: const TextStyle(color: Colors.white54),
                           prefixIcon: const Icon(
                             Icons.search_rounded,

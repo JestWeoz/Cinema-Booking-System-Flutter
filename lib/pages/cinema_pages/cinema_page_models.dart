@@ -28,9 +28,11 @@ class CinemaMovieGroup {
 
 enum CinemaTimeFilter {
   all('Tất cả'),
-  noon('12:00 - 15:00'),
-  afternoon('15:00 - 18:00'),
-  evening('18:00 - 24:00');
+  morning('08:00 - 10:00'),
+  noon('10:00 - 12:00'),
+  afternoon('12:00 - 15:00'),
+  evening('15:00 - 18:00'),
+  night('18:00 - 24:00');
 
   final String label;
 

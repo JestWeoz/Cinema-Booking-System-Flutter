@@ -7,6 +7,7 @@ import 'package:cinema_booking_system_app/pages/trailer_player_page.dart';
 import 'package:cinema_booking_system_app/models/responses/movie_response.dart';
 import 'package:cinema_booking_system_app/services/auth_service.dart';
 import 'package:cinema_booking_system_app/services/movie_service.dart';
+import 'package:cinema_booking_system_app/services/review_ai_summary_service.dart';
 import 'package:cinema_booking_system_app/services/review_service.dart';
 import 'package:cinema_booking_system_app/shared/widgets/app_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +25,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   final AuthService _authService = AuthService.instance;
   final MovieService _movieService = MovieService.instance;
   final ReviewService _reviewService = ReviewService.instance;
+  final ReviewAiSummaryService _reviewAiSummaryService =
+      ReviewAiSummaryService.instance;
 
   MovieResponse? _movie;
   List<MoviePersonResponse> _people = const [];
@@ -32,6 +35,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   final Map<String, ReviewResponse> _reviewDetails = {};
   int _reviewTotal = 0;
   double _averageRating = 0;
+  String? _aiReviewSummary;
+  String? _aiReviewSummaryError;
+  DateTime? _aiReviewSummaryAt;
+  int _aiReviewSourceCount = 0;
+  bool _aiReviewSummaryLoading = false;
   bool _isLoading = true;
   bool _expandedOverview = false;
   bool _liked = false;
@@ -64,18 +72,29 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         return;
       }
 
+      final reviewPage = results[2] as ReviewPageResponse;
+      final averageRating = results[3] as double;
       setState(() {
         _movie = movie;
         _people = results[0] as List<MoviePersonResponse>;
         _images = results[1] as List<MovieImageResponse>;
-        final reviewPage = results[2] as ReviewPageResponse;
         _reviews = reviewPage.items;
         _reviewTotal = reviewPage.totalElements;
         _reviewDetails.clear();
-        _averageRating = results[3] as double;
+        _averageRating = averageRating;
         _currentUsername = results[4] as String?;
+        _aiReviewSummary = null;
+        _aiReviewSummaryError = null;
+        _aiReviewSummaryAt = null;
+        _aiReviewSourceCount = reviewPage.items.length;
+        _aiReviewSummaryLoading = false;
         _isLoading = false;
       });
+      await _loadAiReviewSummary(
+        movie: movie,
+        reviews: reviewPage.items,
+        averageRating: averageRating,
+      );
     } catch (e) {
       if (!mounted) {
         return;
@@ -314,14 +333,112 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       return;
     }
 
+    final reviewPage = results[0] as ReviewPageResponse;
+    final averageRating = results[1] as double;
     setState(() {
-      final reviewPage = results[0] as ReviewPageResponse;
       _reviews = reviewPage.items;
       _reviewTotal = reviewPage.totalElements;
       _reviewDetails.clear();
-      _averageRating = results[1] as double;
+      _averageRating = averageRating;
       _currentUsername = results[2] as String?;
+      _aiReviewSummary = null;
+      _aiReviewSummaryError = null;
+      _aiReviewSummaryAt = null;
+      _aiReviewSourceCount = reviewPage.items.length;
+      _aiReviewSummaryLoading = false;
     });
+
+    final movie = _movie;
+    if (movie != null) {
+      await _loadAiReviewSummary(
+        movie: movie,
+        reviews: reviewPage.items,
+        averageRating: averageRating,
+      );
+    }
+  }
+
+  Future<void> _loadAiReviewSummary({
+    required MovieResponse movie,
+    required List<ReviewSummaryResponse> reviews,
+    required double averageRating,
+    bool forceRefresh = false,
+  }) async {
+    if (!_reviewAiSummaryService.isConfigured || reviews.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _aiReviewSummaryLoading = false;
+        _aiReviewSummary = null;
+        _aiReviewSummaryError = null;
+        _aiReviewSummaryAt = null;
+        _aiReviewSourceCount = reviews.length;
+      });
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _aiReviewSummaryLoading = true;
+        _aiReviewSummaryError = null;
+        _aiReviewSourceCount = reviews.length;
+      });
+    }
+
+    try {
+      final result = await _reviewAiSummaryService.summarizeMovieReviews(
+        movieId: movie.id,
+        movieTitle: movie.title,
+        reviews: reviews,
+        averageRating: averageRating,
+        forceRefresh: forceRefresh,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _aiReviewSummaryLoading = false;
+        _aiReviewSummary = result?.summary;
+        _aiReviewSummaryAt = result?.generatedAt;
+        _aiReviewSourceCount = result?.sourceCount ?? reviews.length;
+        _aiReviewSummaryError = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _aiReviewSummaryLoading = false;
+        _aiReviewSourceCount = reviews.length;
+        _aiReviewSummaryError = _reviewAiSummaryService.friendlyError(error);
+      });
+    }
+  }
+
+  Future<void> _refreshAiReviewSummary() async {
+    final movie = _movie;
+    if (movie == null) {
+      return;
+    }
+    await _loadAiReviewSummary(
+      movie: movie,
+      reviews: _reviews,
+      averageRating: _averageRating,
+      forceRefresh: true,
+    );
+  }
+
+  String _formatAiSummaryTime(DateTime? value) {
+    if (value == null) {
+      return '--';
+    }
+    final local = value.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/${local.year} $hour:$minute';
   }
 
   ReviewSummaryResponse? _findMyReviewSummary([String? username]) {
@@ -1036,6 +1153,109 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     );
   }
 
+  Widget _buildAiSummaryCard() {
+    final summaryText = _aiReviewSummary?.trim() ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: AppColors.secondary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Tom tat AI (Gemini)',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: _aiReviewSummaryLoading ? null : _refreshAiReviewSummary,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  minimumSize: const Size(0, 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Lam moi',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_aiReviewSummaryLoading)
+            const Row(
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Dang tong hop review...',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ),
+              ],
+            )
+          else if (summaryText.isNotEmpty)
+            Text(
+              summaryText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.45,
+              ),
+            )
+          else
+            const Text(
+              'Chua co du du lieu de tao tom tat AI.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
+            ),
+          if (!_aiReviewSummaryLoading && _aiReviewSummaryError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _aiReviewSummaryError!,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+          if (!_aiReviewSummaryLoading) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Nguon $_aiReviewSourceCount review - cap nhat ${_formatAiSummaryTime(_aiReviewSummaryAt)}',
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildReviewsSection() {
     final myReview = _findMyReviewSummary();
 
@@ -1077,6 +1297,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
               ),
             ],
           ),
+          if (_reviewAiSummaryService.isConfigured && _reviews.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildAiSummaryCard(),
+          ],
           if (_reviews.isEmpty) ...[
             const SizedBox(height: 14),
             Container(

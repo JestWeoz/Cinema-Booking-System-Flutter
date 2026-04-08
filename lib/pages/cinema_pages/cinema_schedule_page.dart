@@ -119,9 +119,11 @@ class _CinemaSchedulePageState extends State<CinemaSchedulePage> {
       final hour = parseShowtimeDateTime(showtime.startTime).hour;
       return switch (_selectedFilter) {
         CinemaTimeFilter.all => true,
-        CinemaTimeFilter.noon => hour >= 12 && hour < 15,
-        CinemaTimeFilter.afternoon => hour >= 15 && hour < 18,
-        CinemaTimeFilter.evening => hour >= 18 || hour < 1,
+        CinemaTimeFilter.morning => hour >= 8 && hour < 10,
+        CinemaTimeFilter.noon => hour >= 10 && hour < 12,
+        CinemaTimeFilter.afternoon => hour >= 12 && hour < 15,
+        CinemaTimeFilter.evening => hour >= 15 && hour < 18,
+        CinemaTimeFilter.night => hour >= 18 || hour < 1,
       };
     }).toList();
   }
