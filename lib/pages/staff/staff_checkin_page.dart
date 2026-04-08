@@ -4,6 +4,7 @@ import 'package:cinema_booking_system_app/core/constants/app_routes.dart';
 import 'package:cinema_booking_system_app/models/responses/checkin_response.dart';
 import 'package:cinema_booking_system_app/services/auth_service.dart';
 import 'package:cinema_booking_system_app/services/ticket_service.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -59,9 +60,33 @@ class _StaffCheckInPageState extends State<StaffCheckInPage> {
     if (uri != null) {
       final byQuery = (uri.queryParameters['bookingCode'] ?? '').trim();
       if (byQuery.isNotEmpty) return byQuery;
+
+      // Support QR content like .../tickets/{bookingCode}/qr
+      final segments = uri.pathSegments;
+      final qrIndex = segments.lastIndexOf('qr');
+      if (qrIndex > 0) {
+        final byPath = segments[qrIndex - 1].trim();
+        if (byPath.isNotEmpty) return byPath;
+      }
     }
 
-    return value;
+    return value.replaceAll(RegExp(r'\s+'), '');
+  }
+
+  String _extractErrorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message']?.toString();
+        if (message != null && message.trim().isNotEmpty) {
+          return message;
+        }
+      }
+      if ((error.message ?? '').trim().isNotEmpty) {
+        return error.message!.trim();
+      }
+    }
+    return error.toString();
   }
 
   Future<void> _handleBookingCode(String value) async {
@@ -95,7 +120,7 @@ class _StaffCheckInPageState extends State<StaffCheckInPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Check-in thất bại: ${e.toString()}';
+        _error = 'Check-in thất bại: ${_extractErrorMessage(e)}';
       });
     } finally {
       if (mounted) {
